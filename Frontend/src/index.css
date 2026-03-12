@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+
+:root {
+  --bg:         #111009;
+  --surface:    #181610;
+  --surface2:   #1e1c13;
+  --border:     #2c2a20;
+  --border-b:   #38362a;
+  --text:       #e8e0c8;
+  --muted:      #b0a880;
+  --faint:      #6a6450;
+  --dimmer:     #443f30;
+  --accent:     #c8a84b;
+  --accent-bg:  rgba(200,168,75,0.08);
+  --accent-bdr: rgba(200,168,75,0.22);
+  --green:      #6ab87a;
+  --green-bg:   rgba(106,184,122,0.08);
+  --green-bdr:  rgba(106,184,122,0.22);
+  --warn:       #d4a847;
+  --warn-bg:    rgba(212,168,71,0.10);
+  --warn-bdr:   rgba(212,168,71,0.28);
+  --err:        #d97a6a;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Animations */
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.15; }
+  40%           { opacity: 1; }
+}
+@keyframes cur {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.85); }
+  50%       { opacity: 1;   transform: scale(1); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.animate-msg-in  { animation: msgIn  0.2s ease both; }
+.animate-fade-up { animation: fadeUp 0.25s ease both; }
+.animate-slide-up { animation: slideUp 0.2s ease both; }
+
+.cursor {
+  display: inline-block;
+  width: 2px; height: 14px;
+  background: var(--accent);
+  margin-left: 1px;
+  vertical-align: middle;
+  animation: cur 0.8s step-end infinite;
+}
+
+/* Form inputs */
+.form-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border-b);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--text);
+  caret-color: var(--accent);
+  outline: none;
+  line-height: 1.5;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.form-input::placeholder { color: var(--dimmer); }
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(200,168,75,0.1);
+}
+.form-input.warn {
+  border-color: var(--warn-bdr) !important;
+  background: var(--warn-bg);
+}

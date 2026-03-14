@@ -19,6 +19,12 @@ export const PARSE_STEPS = [
   { id: 'fields',   label: 'SCANNING FOR MISSING FIELDS' },
 ]
 
+export const LOOKUP_STEPS = [
+  { id: 'cl_search', label: 'SEARCHING COURTLISTENER' },
+  { id: 'cl_parse',  label: 'READING CITATION DATA' },
+  { id: 'cl_fill',   label: 'FILLING MISSING FIELDS' },
+]
+
 export const GENERATE_STEPS = [
   { id: 'rule',      label: 'APPLYING BLUEBOOK RULE 10' },
   { id: 'paren',     label: 'BUILDING COURT PARENTHETICAL' },

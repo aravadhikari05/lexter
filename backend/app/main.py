@@ -1,8 +1,16 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from dotenv import load_dotenv
+load_dotenv()
 
-from app.api.routes import health, citation
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(message)s"
+)
+
+from app.api.routes import health, citation, chat
 
 app = FastAPI(title="Bluebook AI API")
 
@@ -16,3 +24,4 @@ app.add_middleware(
 
 app.include_router(citation.router)
 app.include_router(health.router)
+app.include_router(chat.router)

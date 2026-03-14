@@ -1,0 +1,106 @@
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Python / FastAPI
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# FastAPI / server
+*.log
+uvicorn.log
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# =========================
+# Node / React / Vite
+# =========================
+node_modules/
+
+# Vite build output
+dist/
+.vite/
+
+# React build
+build/
+
+# npm/yarn/pnpm logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# lockfiles (optional if team wants them committed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# =========================
+# Vite environment files
+# =========================
+frontend/.env
+frontend/.env.*
+backend/.env
+backend/.env.*
+
+# =========================
+# Editor / IDE
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS junk
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# Docker (optional)
+# =========================
+*.pid
+*.seed
+*.pid.lock
+
+# =========================
+# Temporary files
+# =========================
+tmp/
+temp/
+.cache/
+
+# =========================
+# Testing / misc
+# =========================
+coverage/
+*.lcov

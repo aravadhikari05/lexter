@@ -12,7 +12,6 @@ export interface ParsedCase {
   year:            string | null
   isScotus:        boolean
   isUnpublished:   boolean
-  reporterFullName:string | null
   jurisdiction:    'SCOTUS' | 'Circuit' | 'District' | 'State' | 'Unknown'
   missingFields:   string[]
   needsConfirmation: string[]
@@ -22,7 +21,7 @@ export interface CitationResult {
   fullCitation: string   // practitioner, italics via <em>
   academicFull: string   // law review, small caps via <span class="sc">
   shortForm:    string   // Rule 10.9
-  explanation:  string
+  rulesUsed:    string[]
 }
 
 export interface TickerStep {

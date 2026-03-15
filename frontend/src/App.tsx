@@ -20,7 +20,7 @@ function makeSteps(templates: typeof PARSE_STEPS): TickerStep[] {
 // ─── API calls (direct FastAPI) ───────────────────────────────────────────────
 
 async function apiParseCase(rawInput: string): Promise<ParsedCase> {
-  const res = await fetch(`${API}/chat/parse`, {
+  const res = await fetch(`${API}/citation/parse`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ raw_input: rawInput }),
@@ -34,7 +34,7 @@ async function apiGenerateCitation(
   fields: Record<string, string>,
   pincite: string,
 ): Promise<CitationResult> {
-  const res = await fetch(`${API}/chat/generate`, {
+  const res = await fetch(`${API}/citation/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ parsed, fields, pincite }),

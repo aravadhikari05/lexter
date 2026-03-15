@@ -1,16 +1,12 @@
 import logging
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-load_dotenv()
+from app.api.routes import health, citation, chat
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)s: %(message)s"
 )
-
-from app.api.routes import health, citation, chat
 
 app = FastAPI(title="Bluebook AI API")
 

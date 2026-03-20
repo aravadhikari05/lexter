@@ -1,26 +1,23 @@
-// ─── Domain types ─────────────────────────────────────────────────────────────
-
-export type CitPhase = 'idle' | 'ticker' | 'gaps' | 'done'
-
-export interface ParsedCase {
-  caseName:        string | null
-  volume:          string | null
-  reporter:        string | null
-  firstPage:       string | null
-  pincite:         string | null
-  court:           string | null
-  year:            string | null
-  isScotus:        boolean
-  isUnpublished:   boolean
-  jurisdiction:    'SCOTUS' | 'Circuit' | 'District' | 'State' | 'Unknown'
-  missingFields:   string[]
-  needsConfirmation: string[]
+export interface ParseResponse {
+  caseName?:          string | null
+  volume?:            string | null
+  reporter?:          string | null
+  firstPage?:         string | null
+  pincite?:           string | null
+  court?:             string | null
+  year?:              string | null
+  docket?:            string | null
+  isScotus?:          boolean
+  isUnpublished?:     boolean
+  jurisdiction?:      string
+  missingFields?:     string[]
+  needsConfirmation?: string[]
 }
 
 export interface CitationResult {
-  fullCitation: string   // practitioner, italics via <em>
-  academicFull: string   // law review, small caps via <span class="sc">
-  shortForm:    string   // Rule 10.9
+  academicFull: string
+  shortForm:    string
+  fullCitation: string
   rulesUsed:    string[]
 }
 
@@ -28,27 +25,19 @@ export interface TickerStep {
   id:     string
   label:  string
   status: 'pending' | 'running' | 'done'
+  icon?:  string
 }
-
-// ─── Message types ────────────────────────────────────────────────────────────
-
-export type MessageRole = 'user' | 'assistant'
-export type MessageType = 'text' | 'thinking'
 
 export interface ChatMessage {
-  id:        string
-  role:      MessageRole
-  type:      MessageType
-  text?:     string
+  id:         string
+  role:       'user' | 'assistant'
+  type:       'text' | 'thinking' | 'ticker' | 'confirm' | 'citation'
+  text?:      string
+  fileName?:  string
   streaming?: boolean
-  fileName?: string
+  steps?:     TickerStep[]     // type === 'ticker'
+  parsed?:    ParseResponse    // type === 'confirm'
+  citation?:  CitationResult   // type === 'citation'
 }
 
-// ─── Field metadata ───────────────────────────────────────────────────────────
-
-export interface FieldMeta {
-  label:       string
-  placeholder: string
-}
-
-export type CaseFields = Partial<Record<string, string>>
+export type CitPhase = 'idle' | 'ticker'

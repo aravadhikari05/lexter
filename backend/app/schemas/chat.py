@@ -5,5 +5,7 @@ class HistoryMessage(BaseModel):
     content: str
 
 class ChatRequest(BaseModel):
-    message: str
-    history: list[HistoryMessage] = []
+    message:     str
+    history:     list[HistoryMessage] = []
+    intent:      str = "create"
+    source_type: str = "case"

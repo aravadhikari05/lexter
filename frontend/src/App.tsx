@@ -489,7 +489,7 @@ export default function App() {
                 What do you need to cite?
               </h1>
               <p style={{ fontSize: 19, color: 'var(--muted)', lineHeight: 1.65, textAlign: 'center', maxWidth: 500, margin: '0 0 36px', fontFamily: "'Lora', serif" }}>
-                Every source type. Every rule. Bluebook 21st ed.
+                Every source type. Every rule. Bluebook 22nd ed.
               </p>
               <div style={{ width: '100%', padding: '0 24px', boxSizing: 'border-box' }}>
                 <div style={{ position: 'relative', borderRadius: 22, boxShadow: inputFocused ? '0 0 0 1.5px var(--accent), 0 0 18px 4px color-mix(in srgb, var(--accent) 45%, transparent)' : '0 0 0 0px transparent', transition: 'box-shadow .35s ease' }}>

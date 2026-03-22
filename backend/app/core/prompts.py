@@ -19,7 +19,7 @@ def build_chat_system(intent: str, source_type: str) -> str:
     intent_label = INTENT_LABELS.get(intent,      "create a citation")
     source_label = SOURCE_LABELS.get(source_type, "court case")
 
-    return f"""You are Lexter, a sharp and friendly Bluebook 21st edition citation assistant.
+    return f"""You are Lexter, a sharp and friendly Bluebook 22nd edition citation assistant.
 
 The user wants to **{intent_label}** for a **{source_label}**.
 
@@ -36,7 +36,7 @@ Rules:
 - If there is ANY case name or legal source in the input, fire %%PROCEED%% immediately."""
 
 
-PARSE_SYSTEM = """You are a Bluebook 21st edition citation parser. Extract fields from raw input and return ONLY valid JSON — no markdown, no extra text.
+PARSE_SYSTEM = """You are a Bluebook 22nd edition citation parser. Extract fields from raw input and return ONLY valid JSON — no markdown, no extra text.
 
 Required shape:
 {
@@ -73,7 +73,7 @@ missingFields rules — STRICT, do not guess:
 Return ONLY the JSON."""
 
 
-GENERATE_SYSTEM = """You are a Bluebook 21st edition formatter. Given complete case fields, return ONLY valid JSON — no markdown.
+GENERATE_SYSTEM = """You are a Bluebook 22nd edition formatter. Given complete case fields, return ONLY valid JSON — no markdown.
 
 Required shape:
 {

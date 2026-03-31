@@ -46,7 +46,7 @@ async def _orchestrate_stream(raw_input: str):
 
     # Fire LLM parse while remaining steps tick
     parse_task = asyncio.create_task(
-        parse_citation(ParseRequest(raw_input=raw_input))
+        parse_citation(ParseRequest(raw_input=raw_input), source_type="case")
     )
 
     await asyncio.sleep(0.25)

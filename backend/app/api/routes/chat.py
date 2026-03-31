@@ -50,7 +50,7 @@ async def stream_chat(req: ChatRequest):
             yield sse({"type": "step", "id": "read",     "status": "done"})
 
             yield sse({"type": "step", "id": "name",     "status": "running", "label": "Extracting case name"})
-            parse_task = asyncio.create_task(parse_citation(ParseRequest(raw_input=raw_input)))
+            parse_task = asyncio.create_task(parse_citation(ParseRequest(raw_input=raw_input), source_type=req.source_type))
             await asyncio.sleep(0.25)
             yield sse({"type": "step", "id": "name",     "status": "done"})
 
@@ -87,7 +87,7 @@ async def stream_chat(req: ChatRequest):
             # No missing fields — generate immediately
             yield sse({"type": "step", "id": "cite", "status": "running", "label": "Building citation"})
             try:
-                generated = await generate_citation(GenerateRequest(parsed=parsed))
+                generated = await generate_citation(GenerateRequest(parsed=parsed), source_type=req.source_type)
             except Exception as e:
                 yield sse({"type": "error", "message": str(e)})
                 return
@@ -114,6 +114,7 @@ async def stream_chat(req: ChatRequest):
 
 class ConfirmRequest(BaseModel):
     parsed: ParseResponse
+    source_type: str = "case"
 
 
 @router.post("/confirm")
@@ -121,7 +122,7 @@ async def confirm_and_generate(req: ConfirmRequest):
     async def event_stream():
         yield sse({"type": "step", "id": "cite", "status": "running", "label": "Building citation"})
         try:
-            generated = await generate_citation(GenerateRequest(parsed=req.parsed))
+            generated = await generate_citation(GenerateRequest(parsed=req.parsed), source_type=req.source_type)
         except Exception as e:
             yield sse({"type": "error", "message": str(e)})
             yield sse({"type": "done"})

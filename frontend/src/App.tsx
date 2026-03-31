@@ -364,7 +364,7 @@ export default function App() {
       const res = await fetch(`${API}/chat/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parsed: merged }),
+        body: JSON.stringify({ parsed: merged, source_type: selectedSource }),
       })
       if (!res.ok) throw new Error('generate failed')
 

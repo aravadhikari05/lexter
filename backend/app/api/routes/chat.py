@@ -6,10 +6,10 @@ from pydantic import BaseModel
 from app.schemas.chat import ChatRequest
 from app.schemas.citation import ParseRequest, GenerateRequest, ParseResponse
 from app.core.prompts import build_chat_system
-from app.services.llm import stream
-from app.services.citation_parser import parse_citation
-from app.services.citation_generator import generate_citation
-from app.services.citation_lookup import enrich_parsed
+from app.core.llm import stream
+from app.services.parser import parse_citation
+from app.services.generator import generate_citation
+from app.services.lookup import enrich_parsed
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 

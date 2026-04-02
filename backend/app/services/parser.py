@@ -1,9 +1,9 @@
-from app.services.llm import complete, safe_json
+from app.core.llm import complete, safe_json
 from app.core.prompts import PARSE_SYSTEM
 from app.schemas.citation import ParseRequest, ParseResponse
-from app.services.rule_lookup import get_general_rules
-from app.services.missing_fields import check_missing_fields
-from app.services.normalizer import normalize
+from app.utils.rule_lookup import get_general_rules
+from app.utils.missing_fields import check_missing_fields
+from app.utils.normalizer import normalize
 
 
 async def parse_citation(req: ParseRequest, source_type: str = "case") -> ParseResponse:

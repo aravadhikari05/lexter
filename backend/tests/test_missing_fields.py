@@ -1,6 +1,6 @@
 """Tests for the deterministic missing-field checker."""
 from app.schemas.citation import ParseResponse
-from app.services.missing_fields import check_missing_fields
+from app.utils.missing_fields import check_missing_fields
 
 
 def _parsed(**overrides) -> ParseResponse:

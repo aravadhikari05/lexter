@@ -1,5 +1,5 @@
 """Tests for the Bluebook rule lookup / prompt injection."""
-from app.services.rule_lookup import (
+from app.utils.rule_lookup import (
     get_general_rules,
     get_specific_rules,
     _extract_section,

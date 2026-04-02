@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 
 from app.schemas.citation import ParseResponse
-from app.services.t6_abbreviator import t6_abbreviate
+from app.utils.t6_abbreviator import t6_abbreviate
 
 _TABLES = Path(__file__).resolve().parents[3] / "Bluebook" / "Whitepages"
 
@@ -220,7 +220,6 @@ def _parse_t7_courts(path: Path) -> dict[str, str]:
 
 
 _T7_FULL_TO_ABBR = _parse_t7_courts(_TABLES / "t7_court_names.md")
-_T7_ABBR_SET: set[str] = set(_T7_FULL_TO_ABBR.values())
 
 
 # ── 2c. Federal circuit pattern matching ──────────────────────────────────────

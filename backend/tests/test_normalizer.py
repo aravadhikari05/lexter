@@ -1,7 +1,7 @@
 """Tests for the deterministic normalizer (T1, T7, T6, jurisdiction)."""
 import pytest
 from app.schemas.citation import ParseResponse
-from app.services.normalizer import (
+from app.utils.normalizer import (
     normalize_reporter,
     normalize_court,
     derive_jurisdiction,

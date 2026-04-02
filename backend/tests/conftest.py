@@ -38,14 +38,14 @@ ENRICHMENT_JSON = json.dumps({
 # ── LLM mock fixtures ────────────────────────────────────────────────────────
 
 _COMPLETE_PATCH_TARGETS = [
-    "app.services.llm.complete",
-    "app.services.citation_parser.complete",
-    "app.services.citation_generator.complete",
-    "app.services.citation_lookup.complete",
+    "app.core.llm.complete",
+    "app.services.parser.complete",
+    "app.services.generator.complete",
+    "app.services.lookup.complete",
 ]
 
 _STREAM_PATCH_TARGETS = [
-    "app.services.llm.stream",
+    "app.core.llm.stream",
     "app.api.routes.chat.stream",
 ]
 

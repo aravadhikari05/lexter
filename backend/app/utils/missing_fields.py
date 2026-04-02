@@ -1,7 +1,7 @@
 # Deterministic missing-field checker for parsed citations
 import re
 from app.schemas.citation import ParseResponse
-from app.services.normalizer import CANONICAL_REPORTERS
+from app.utils.normalizer import CANONICAL_REPORTERS
 
 
 def _is_empty(value) -> bool:

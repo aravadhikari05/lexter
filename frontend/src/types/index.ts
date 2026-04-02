@@ -44,5 +44,3 @@ export interface ChatMessage {
   parsed?:    ParseResponse    // type === 'confirm'
   citation?:  CitationResult   // type === 'citation'
 }
-
-export type CitPhase = 'idle' | 'ticker'

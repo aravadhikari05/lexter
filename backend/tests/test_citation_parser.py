@@ -1,7 +1,7 @@
 """Tests for citation_parser (LLM mocked via conftest fixtures)."""
 import json
 from app.schemas.citation import ParseRequest
-from app.services.citation_parser import parse_citation
+from app.services.parser import parse_citation
 
 
 class TestParseCitation:

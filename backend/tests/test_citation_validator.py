@@ -1,7 +1,7 @@
 """Tests for the citation validation layer."""
 import pytest
 from app.schemas.citation import GenerateResponse
-from app.services.citation_validator import (
+from app.services.validator import (
     ValidationResult,
     validate_citation,
     sanitize_output,

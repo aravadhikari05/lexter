@@ -1,6 +1,6 @@
 """Tests for citation_lookup enrichment (LLM mocked)."""
 import json
-from app.services.citation_lookup import enrich_parsed
+from app.services.lookup import enrich_parsed
 from tests.conftest import make_parse_response
 
 

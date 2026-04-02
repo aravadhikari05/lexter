@@ -1,6 +1,6 @@
 """Tests for the deterministic Bluebook case formatter."""
 import pytest
-from app.services.deterministic_formatter import (
+from app.services.formatter import (
     format_case,
     FormatterError,
     _pick_short_party,

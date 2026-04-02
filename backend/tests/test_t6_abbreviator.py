@@ -1,5 +1,5 @@
 """Tests for T6 case-name abbreviation."""
-from app.services.t6_abbreviator import t6_abbreviate
+from app.utils.t6_abbreviator import t6_abbreviate
 
 
 class TestT6Abbreviate:

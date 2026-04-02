@@ -4,8 +4,8 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from app.schemas.citation import ParseRequest, ParseResponse, GenerateRequest, GenerateResponse
-from app.services.citation_parser import parse_citation
-from app.services.citation_generator import generate_citation
+from app.services.parser import parse_citation
+from app.services.generator import generate_citation
 
 router = APIRouter(prefix="/citation", tags=["citation"])
 

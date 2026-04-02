@@ -1,15 +1,15 @@
 import json
 import logging
-from app.services.llm import complete, safe_json
+from app.core.llm import complete, safe_json
 from app.core.prompts import GENERATE_SYSTEM
 from app.schemas.citation import GenerateRequest, GenerateResponse
-from app.services.rule_lookup import get_specific_rules
-from app.services.deterministic_formatter import format_case, FormatterError
-from app.services.citation_validator import (
+from app.utils.rule_lookup import get_specific_rules
+from app.services.formatter import format_case, FormatterError
+from app.services.validator import (
     validate_citation,
     sanitize_output,
 )
-from app.services.normalizer import normalize_fields
+from app.utils.normalizer import normalize_fields
 
 log = logging.getLogger(__name__)
 

@@ -13,7 +13,7 @@ Trust hierarchy:
 """
 
 from app.schemas.citation import ParseResponse
-from app.services.llm import complete, safe_json
+from app.core.llm import complete, safe_json
 
 
 # ─── CourtListener stub ───────────────────────────────────────────────────────

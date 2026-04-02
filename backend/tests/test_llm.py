@@ -1,7 +1,7 @@
 """Tests for llm.safe_json (the only deterministic part of the LLM module)."""
 import json
 import pytest
-from app.services.llm import safe_json
+from app.core.llm import safe_json
 
 
 class TestSafeJson:

@@ -1,7 +1,7 @@
 """Tests for citation_generator (deterministic path + LLM fallback)."""
 import json
 from app.schemas.citation import GenerateRequest, ParseResponse, GenerateResponse
-from app.services.citation_generator import generate_citation
+from app.services.generator import generate_citation
 from tests.conftest import make_parse_response, BROWN_GENERATED_JSON
 
 

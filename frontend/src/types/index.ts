@@ -1,17 +1,20 @@
 export interface ParseResponse {
-  caseName?:          string | null
-  volume?:            string | null
-  reporter?:          string | null
-  firstPage?:         string | null
-  pincite?:           string | null
-  court?:             string | null
-  year?:              string | null
-  docket?:            string | null
-  isScotus?:          boolean
-  isUnpublished?:     boolean
-  jurisdiction?:      string
-  missingFields?:     string[]
-  needsConfirmation?: string[]
+  caseName?:                 string | null
+  volume?:                   string | null
+  reporter?:                 string | null
+  firstPage?:                string | null
+  pincite?:                  string | null
+  court?:                    string | null
+  year?:                     string | null
+  fullDate?:                 string | null
+  docket?:                   string | null
+  weightParenthetical?:      string | null
+  explanatoryParenthetical?: string | null
+  isScotus?:                 boolean
+  isUnpublished?:            boolean
+  jurisdiction?:             string
+  missingFields?:            string[]
+  needsConfirmation?:        string[]
 }
 
 export interface CitationResult {

@@ -9,21 +9,24 @@ interface Props {
 }
 
 const FIELD_LABELS: Record<string, string> = {
-  caseName:  'Case Name',
-  volume:    'Volume',
-  reporter:  'Reporter',
-  firstPage: 'First Page',
-  court:     'Court',
-  year:      'Year',
-  pincite:   'Pincite',
+  caseName:                 'Case Name',
+  volume:                   'Volume',
+  reporter:                 'Reporter',
+  firstPage:                'First Page',
+  court:                    'Court',
+  year:                     'Year',
+  pincite:                  'Pincite',
+  weightParenthetical:      'Weight Parenthetical',
+  explanatoryParenthetical: 'Explanatory Parenthetical',
 }
 
-// Rows: [caseName spans full], [volume, reporter, firstPage], [court, year, pincite] or [year, pincite] for SCOTUS
+// Rows: [caseName], [volume, reporter, firstPage], [court, year, pincite] or [year, pincite], [weight, explanatory]
 function buildRows(isScotus: boolean): string[][] {
   return [
     ['caseName'],
     ['volume', 'reporter', 'firstPage'],
     isScotus ? ['year', 'pincite'] : ['court', 'year', 'pincite'],
+    ['weightParenthetical', 'explanatoryParenthetical'],
   ]
 }
 
@@ -85,7 +88,11 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
             {row.map(k => (
               <Field
                 key={k} k={k} parsed={parsed} onEdit={onEdit}
-                placeholder={k === 'pincite' ? 'optional' : '—'}
+                placeholder={
+                  k === 'pincite' || k === 'weightParenthetical' || k === 'explanatoryParenthetical'
+                    ? 'optional'
+                    : '—'
+                }
               />
             ))}
           </div>

@@ -66,9 +66,11 @@ def check_missing_fields(parsed: ParseResponse) -> tuple[list[str], list[str]]:
     if not parsed.isScotus and _is_empty(parsed.court):
         missing.append("court")
 
-    # Docket required for unpublished
+    # Docket and fullDate required for unpublished (Rule 10.5(b))
     if parsed.isUnpublished and _is_empty(parsed.docket):
         missing.append("docket")
+    if parsed.isUnpublished and _is_empty(parsed.fullDate):
+        missing.append("fullDate")
 
     # Suspicious value checks — only for non-empty, non-missing fields
     if not _is_empty(parsed.volume) and "volume" not in missing:

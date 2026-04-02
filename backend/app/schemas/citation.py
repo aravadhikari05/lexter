@@ -22,8 +22,11 @@ class ParseResponse(BaseModel):
     pincite:           Optional[str]  = None
     court:             Optional[str]  = None
     year:              Optional[str]  = None
-    docket:            Optional[str]  = None
-    isScotus:          bool           = False
+    fullDate:                Optional[str]  = None  # e.g. "Dec. 30, 1977" — required for unpublished (Rule 10.5(b))
+    docket:                  Optional[str]  = None
+    weightParenthetical:     Optional[str]  = None  # e.g. "per curiam", "5-4 decision", "Stevens, J., dissenting"
+    explanatoryParenthetical:Optional[str]  = None  # e.g. "holding that the statute was unconstitutional"
+    isScotus:                bool           = False
     isUnpublished:     bool           = False
     jurisdiction:      str            = "Unknown"
     missingFields:     list[str]      = []

@@ -40,19 +40,22 @@ PARSE_SYSTEM = """You are a Bluebook 22nd edition citation parser. Extract field
 
 Required shape:
 {
-  "caseName":           string | null,
-  "volume":             string | null,
-  "reporter":           string | null,
-  "firstPage":          string | null,
-  "pincite":            string | null,
-  "court":              string | null,
-  "year":               string | null,
-  "docket":             string | null,
-  "isScotus":           boolean,
-  "isUnpublished":      boolean,
-  "jurisdiction":       string,
-  "missingFields":      string[],
-  "needsConfirmation":  string[]
+  "caseName":                string | null,
+  "volume":                  string | null,
+  "reporter":                string | null,
+  "firstPage":               string | null,
+  "pincite":                 string | null,
+  "court":                   string | null,
+  "year":                    string | null,
+  "fullDate":                string | null,
+  "docket":                  string | null,
+  "weightParenthetical":     string | null,
+  "explanatoryParenthetical":string | null,
+  "isScotus":                boolean,
+  "isUnpublished":           boolean,
+  "jurisdiction":            string,
+  "missingFields":           string[],
+  "needsConfirmation":       string[]
 }
 
 Field rules:
@@ -62,11 +65,16 @@ Field rules:
 - isScotus: true if reporter is U.S., S. Ct., L. Ed., or L. Ed. 2d
 - jurisdiction: one of "SCOTUS", "Circuit", "District", "State", "Unknown"
 - pincite: extract if present, never put in missingFields
+- fullDate: for unpublished/unreported cases only — the full decision date in Bluebook format (e.g. "Dec. 30, 1977"). Null for published cases.
+- weightParenthetical: extract if present — weight-of-authority info following the date parenthetical, e.g. "per curiam", "5-4 decision", "Stevens, J., dissenting", "en banc". Extract WITHOUT the outer parens. Null if absent.
+- explanatoryParenthetical: extract if present — explanatory text following the date (and weight) parenthetical, e.g. "holding that the statute violated due process". Extract WITHOUT the outer parens. Null if absent.
 
 missingFields rules — STRICT, do not guess:
 - Always required: caseName, year
 - Required for published cases: volume, reporter, firstPage
 - court: ONLY required if isScotus is false AND jurisdiction is not SCOTUS
+- For unpublished cases: fullDate is required (Rule 10.5(b))
+- weightParenthetical and explanatoryParenthetical are NEVER required — never put them in missingFields
 - If a field is not explicitly stated in the input, it is missing
 - Fields guessed or uncertain go in needsConfirmation
 
@@ -84,14 +92,19 @@ Required shape:
 }
 
 Formatting rules:
-- academicFull (Rule 10, law review): case name in SMALL CAPS using <span class="sc">...</span>, comma, Vol Reporter FirstPage (Court Year).
-    e.g. <span class="sc">Brown v. Bd. of Educ.</span>, 347 U.S. 483 (1954).
-    Omit court parenthetical for SCOTUS reporters (U.S., S. Ct., L. Ed.) per Rule 10.4(b).
-- shortForm (Rule 10.9): case name in italics <em>...</em>, Vol Reporter at FirstPage.
-    e.g. <em>Brown</em>, 347 U.S. at 483.
-- fullCitation (Rule B10, court docs/memos): case name in italics <em>...</em>, same structure as academic.
+- academicFull (Rule 10, law review): case name in italics <em>...</em>, comma, Vol Reporter FirstPage (Court Year) (weight) (explanatory).
     e.g. <em>Brown v. Bd. of Educ.</em>, 347 U.S. 483 (1954).
-- rulesUsed: list specific rules applied, e.g. ["Rule 10", "Rule 10.4(b)", "Table T1", "Table T6"]
+    Omit court parenthetical for SCOTUS reporters (U.S., S. Ct., L. Ed.) per Rule 10.4(a).
+    Case names are NEVER small-capped — they are always italicized in all Bluebook citation contexts.
+    If weightParenthetical is present, append it after the date parenthetical: (weight).
+    If explanatoryParenthetical is present, append it after weight: (explanatory).
+    Order per Rule 10.6.4: (date) (weight) (explanatory).
+- shortForm (Rule 10.9): first party in italics <em>...</em>, Vol Reporter at FirstPage. NO parentheticals in short form.
+    Use the second party if the first party is a government entity, state, or "United States" (Rule 10.9(a)(i)).
+    e.g. <em>Brown</em>, 347 U.S. at 483. Or <em>Haskell</em>, 364 F.3d at 1200. (not <em>United States</em>)
+- fullCitation (Rule B10, court docs/memos): same structure as academicFull including parentheticals.
+    e.g. <em>Brown v. Bd. of Educ.</em>, 347 U.S. 483 (1954).
+- rulesUsed: list specific rules applied, e.g. ["B10.1", "B10.1.2", "B10.1.3", "Rule 10.6", "Rule 10.9"]
 - Do NOT inject pincite — handled client-side.
 
 Return ONLY the JSON."""

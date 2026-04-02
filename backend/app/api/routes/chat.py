@@ -66,35 +66,22 @@ async def stream_chat(req: ChatRequest):
                 yield sse({"type": "error", "message": str(e)})
                 return
 
-            had_missing = bool([f for f in (parsed.missingFields or []) if f != "docket"])
-
-            if had_missing:
-                try:
-                    parsed = await enrich_parsed(parsed)
-                except Exception as e:
-                    yield sse({"type": "error", "message": str(e)})
-                    return
+            try:
+                parsed = await enrich_parsed(parsed)
+            except Exception as e:
+                yield sse({"type": "error", "message": str(e)})
+                return
 
             yield sse({"type": "step", "id": "fields", "status": "done"})
             await asyncio.sleep(0.10)
 
-            # ── Confirm or generate ───────────────────────────────────────────
-            if had_missing:
-                yield sse({"type": "confirm", "parsed": parsed.model_dump()})
-                yield sse({"type": "done"})
-                return
-
-            # No missing fields — generate immediately
-            yield sse({"type": "step", "id": "cite", "status": "running", "label": "Building citation"})
-            try:
-                generated = await generate_citation(GenerateRequest(parsed=parsed), source_type=req.source_type)
-            except Exception as e:
-                yield sse({"type": "error", "message": str(e)})
-                return
-            yield sse({"type": "step", "id": "cite", "status": "done"})
-            await asyncio.sleep(0.10)
-
-            yield sse({"type": "citation", "data": _citation_dict(generated)})
+            # ── Always confirm ────────────────────────────────────────────────
+            # Every value at this point came from the LLM (parser or
+            # enrichment). Always show the confirm bubble so the user
+            # can verify before we generate a final citation.
+            yield sse({"type": "confirm", "parsed": parsed.model_dump()})
+            yield sse({"type": "done"})
+            return
 
         else:
             # ── Normal conversational reply ───────────────────────────────────
@@ -143,8 +130,9 @@ async def confirm_and_generate(req: ConfirmRequest):
 
 def _citation_dict(generated) -> dict:
     return {
-        "academicFull": generated.academicFull,
-        "shortForm":    generated.shortForm,
-        "fullCitation": generated.fullCitation,
-        "rulesUsed":    generated.rulesUsed or [],
+        "academicFull":       generated.academicFull,
+        "shortForm":          generated.shortForm,
+        "fullCitation":       generated.fullCitation,
+        "rulesUsed":          generated.rulesUsed or [],
+        "validationWarnings": generated.validationWarnings or [],
     }

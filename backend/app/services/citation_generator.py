@@ -1,9 +1,16 @@
 import json
+import logging
 from app.services.llm import complete, safe_json
 from app.core.prompts import GENERATE_SYSTEM
 from app.schemas.citation import GenerateRequest, GenerateResponse
 from app.services.rule_lookup import get_specific_rules
 from app.services.deterministic_formatter import format_case, FormatterError
+from app.services.citation_validator import (
+    validate_citation,
+    sanitize_output,
+)
+
+log = logging.getLogger(__name__)
 
 
 async def generate_citation(req: GenerateRequest, source_type: str = "case") -> GenerateResponse:
@@ -12,11 +19,27 @@ async def generate_citation(req: GenerateRequest, source_type: str = "case") -> 
 
     if source_type == "case":
         try:
-            return format_case(merged)
+            generated = format_case(merged)
         except FormatterError:
-            pass
+            generated = None
 
-    return await _generate_via_llm(merged, req, source_type)
+        if generated is not None:
+            return _run_validation(merged, generated)
+
+    result = await _generate_via_llm(merged, req, source_type)
+    result = sanitize_output(result)
+    return _run_validation(merged, result)
+
+
+def _run_validation(fields: dict, generated: GenerateResponse) -> GenerateResponse:
+    result = validate_citation(fields, generated)
+    all_issues = result.errors + result.warnings
+    if result.errors:
+        log.warning("Citation validation errors: %s", result.errors)
+    if result.warnings:
+        log.info("Citation validation warnings: %s", result.warnings)
+    generated.validationWarnings = all_issues
+    return generated
 
 
 async def _generate_via_llm(merged: dict, req: GenerateRequest, source_type: str) -> GenerateResponse:

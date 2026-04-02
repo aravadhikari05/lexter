@@ -6,6 +6,10 @@ Fills in missing citation fields before generation.
 RIGHT NOW: Uses an LLM call to infer/fill missing fields.
 LATER: Replace `_fetch_from_courtlistener` with a real CourtListener API lookup.
        The rest of this function stays the same — just swap the data source.
+
+Trust hierarchy:
+  1. CourtListener (verified)  — accepted silently
+  2. LLM parametric recall     — marked "unverified", always needs user confirmation
 """
 
 from app.schemas.citation import ParseResponse
@@ -56,44 +60,58 @@ Only include fields that were listed as missing. Be as accurate as possible — 
 
 
 # ─── Main enrichment entry point ──────────────────────────────────────────────
+
+ENRICHABLE_FIELDS = {
+    "caseName":  "caseName",
+    "volume":    "volume",
+    "reporter":  "reporter",
+    "firstPage": "firstPage",
+    "court":     "court",
+    "year":      "year",
+}
+
+
 async def enrich_parsed(parsed: ParseResponse) -> ParseResponse:
     """
     Takes a ParseResponse that may have missing fields.
-    Attempts to fill them — first via CourtListener (stub for now), then LLM fallback.
-    Returns a new ParseResponse with as many fields filled as possible.
+    Attempts to fill them — first via CourtListener, then LLM fallback.
+
+    Fields filled by LLM are added to ``needsConfirmation`` so the UI can
+    mark them as unverified and require explicit user approval before
+    generating a final citation.
     """
     missing = [f for f in (parsed.missingFields or []) if f != "docket"]
     if not missing:
         return parsed
 
-    # Step 1: Try CourtListener (stub — returns {} until wired up)
     cl_data = await _fetch_from_courtlistener(parsed.caseName or "", parsed)
 
-    # Step 2: LLM fills whatever CourtListener didn't cover
     still_missing = [f for f in missing if f not in cl_data or not cl_data[f]]
     llm_data = await _enrich_via_llm(parsed, still_missing) if still_missing else {}
 
-    # Step 3: Merge — CourtListener takes priority over LLM
+    # CourtListener values take priority over LLM guesses
     merged = {**llm_data, **cl_data}
 
-    # Apply to parsed object
-    field_map = {
-        "caseName":  "caseName",
-        "volume":    "volume",
-        "reporter":  "reporter",
-        "firstPage": "firstPage",
-        "court":     "court",
-        "year":      "year",
-    }
     updated = parsed.model_dump()
+    llm_filled: list[str] = []
+
     for field in missing:
-        key = field_map.get(field)
+        key = ENRICHABLE_FIELDS.get(field)
         if key and merged.get(field):
             updated[key] = merged[field]
+            # Track provenance: LLM-filled fields are unverified
+            if field not in cl_data or not cl_data.get(field):
+                llm_filled.append(field)
 
-    # Clear out the fields we've now filled
     updated["missingFields"] = [
         f for f in missing if not merged.get(f)
     ]
+
+    # Any field the LLM supplied (rather than CourtListener) requires
+    # explicit user confirmation before we trust it.
+    existing_confirms = set(parsed.needsConfirmation or [])
+    updated["needsConfirmation"] = sorted(
+        existing_confirms | set(llm_filled)
+    )
 
     return ParseResponse(**updated)

@@ -43,3 +43,4 @@ class GenerateResponse(BaseModel):
     shortForm:    str
     fullCitation: str
     rulesUsed:    list[str] = []
+    validationWarnings: list[str] = []

@@ -20,7 +20,6 @@ const FIELD_LABELS: Record<string, string> = {
   explanatoryParenthetical: 'Explanatory Parenthetical',
 }
 
-// Rows: [caseName], [volume, reporter, firstPage], [court, year, pincite] or [year, pincite], [weight, explanatory]
 function buildRows(isScotus: boolean): string[][] {
   return [
     ['caseName'],
@@ -30,19 +29,34 @@ function buildRows(isScotus: boolean): string[][] {
   ]
 }
 
-function Field({ k, parsed, onEdit, placeholder }: {
+function Field({ k, parsed, onEdit, placeholder, unverified }: {
   k: string
   parsed: ParseResponse
   onEdit: (field: string, value: string) => void
   placeholder?: string
+  unverified?: boolean
 }) {
+  const borderDefault = unverified ? '#c8952c' : 'var(--border-b)'
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1, minWidth: 0 }}>
       <span style={{
-        fontSize: 9, letterSpacing: '.1em', color: 'var(--dimmer)',
+        fontSize: 9, letterSpacing: '.1em',
+        color: unverified ? '#c8952c' : 'var(--dimmer)',
         fontFamily: "'DM Mono', monospace", textTransform: 'uppercase',
+        display: 'flex', alignItems: 'center', gap: 5,
       }}>
         {FIELD_LABELS[k]}
+        {unverified && (
+          <span style={{
+            fontSize: 8, letterSpacing: '.06em',
+            background: 'rgba(200, 149, 44, 0.15)',
+            color: '#c8952c', borderRadius: 3,
+            padding: '1px 5px', fontWeight: 600,
+          }}>
+            AI-SUGGESTED
+          </span>
+        )}
       </span>
       <input
         type="text"
@@ -50,20 +64,25 @@ function Field({ k, parsed, onEdit, placeholder }: {
         onChange={e => onEdit(k, e.target.value)}
         placeholder={placeholder || '—'}
         style={{
-          width: '100%', background: 'var(--bg)', border: '1px solid var(--border-b)',
+          width: '100%',
+          background: unverified ? 'rgba(200, 149, 44, 0.06)' : 'var(--bg)',
+          border: `1px solid ${borderDefault}`,
           borderRadius: 6, padding: '7px 10px', fontFamily: "'DM Mono', monospace",
           fontSize: 12, color: 'var(--text)', outline: 'none',
           caretColor: 'var(--accent)', transition: 'border-color .15s',
           boxSizing: 'border-box',
         }}
         onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent-bdr)' }}
-        onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-b)' }}
+        onBlur={e => { e.currentTarget.style.borderColor = borderDefault }}
       />
     </div>
   )
 }
 
 export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Props) {
+  const unverifiedSet = new Set(parsed.needsConfirmation ?? [])
+  const hasUnverified = unverifiedSet.size > 0
+
   return (
     <div style={{
       background: 'var(--surface)',
@@ -76,10 +95,25 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
         background: 'var(--surface2)',
         borderBottom: '1px solid var(--border)',
         padding: '8px 16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <span style={{ fontSize: 9, letterSpacing: '.12em', color: 'var(--accent)', fontFamily: "'DM Mono', monospace" }}>
           CASE FOUND. DOES THIS LOOK RIGHT?
         </span>
+        {hasUnverified && (
+          <span style={{
+            fontSize: 8, letterSpacing: '.08em',
+            fontFamily: "'DM Mono', monospace",
+            color: '#c8952c', display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c8952c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            SOME VALUES ARE AI-SUGGESTED — PLEASE VERIFY
+          </span>
+        )}
       </div>
 
       <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -88,6 +122,7 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
             {row.map(k => (
               <Field
                 key={k} k={k} parsed={parsed} onEdit={onEdit}
+                unverified={unverifiedSet.has(k)}
                 placeholder={
                   k === 'pincite' || k === 'weightParenthetical' || k === 'explanatoryParenthetical'
                     ? 'optional'
@@ -112,7 +147,7 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
               transition: 'background .15s',
             }}
           >
-            {working ? 'GENERATING…' : 'LOOKS GOOD →'}
+            {working ? 'GENERATING…' : hasUnverified ? 'CONFIRM & GENERATE →' : 'LOOKS GOOD →'}
           </button>
         </div>
       </div>

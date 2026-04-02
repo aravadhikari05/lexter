@@ -103,6 +103,9 @@ def format_case(fields: dict) -> GenerateResponse:
     rules_used: list[str] = ["B10.1", "B10.1.1"]
 
     if is_unpublished:
+        db_id = (fields.get("dbIdentifier") or "").strip()
+        if db_id:
+            return _format_electronic_db(fields, case_name, short_party, is_scotus, rules_used)
         return _format_unpublished(fields, case_name, short_party, is_scotus, rules_used)
     return _format_published(fields, case_name, short_party, is_scotus, rules_used)
 
@@ -149,6 +152,60 @@ def _format_published(
     short_form = _normalize(
         f"<em>{short_party}</em>, {volume} {reporter} at {at_page}."
     )
+
+    return GenerateResponse(
+        academicFull=academic_full,
+        shortForm=short_form,
+        fullCitation=full_citation,
+        rulesUsed=rules_used,
+    )
+
+
+# ── Electronic database cases (B10.1.4(i)) ────────────────────────────────────
+
+def _format_electronic_db(
+    fields: dict,
+    case_name: str,
+    short_party: str,
+    is_scotus: bool,
+    rules_used: list[str],
+) -> GenerateResponse:
+    full_date = (fields.get("fullDate") or "").strip()
+    if not full_date:
+        raise FormatterError(
+            "Electronic database cases require a full date (fullDate field) "
+            "per Rule 10.5(b). Falling back to LLM."
+        )
+
+    _require(fields, "docket", "dbIdentifier")
+    if not is_scotus:
+        _require(fields, "court")
+
+    docket = fields["docket"].strip()
+    db_id = fields["dbIdentifier"].strip()
+    pincite = (fields.get("pincite") or "").strip()
+    court = fields.get("court", "").strip()
+
+    rules_used.extend(["B10.1.4", "B10.1.4(i)", "Rule 10.5(b)"])
+
+    parenthetical = f"({full_date})" if is_scotus else f"({court} {full_date})"
+    suffix = _build_parentheticals(fields)
+    if suffix:
+        rules_used.append("Rule 10.6")
+
+    star_pin = f", at *{pincite}" if pincite else ""
+
+    academic_full = _normalize(
+        f"<em>{case_name}</em>, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
+    )
+    full_citation = _normalize(
+        f"<em>{case_name}</em>, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
+    )
+
+    if pincite:
+        short_form = _normalize(f"<em>{short_party}</em>, {db_id}, at *{pincite}.")
+    else:
+        short_form = _normalize(f"<em>{short_party}</em>, {db_id}.")
 
     return GenerateResponse(
         academicFull=academic_full,

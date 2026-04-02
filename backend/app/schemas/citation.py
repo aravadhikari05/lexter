@@ -24,6 +24,7 @@ class ParseResponse(BaseModel):
     year:              Optional[str]  = None
     fullDate:                Optional[str]  = None  # e.g. "Dec. 30, 1977" — required for unpublished (Rule 10.5(b))
     docket:                  Optional[str]  = None
+    dbIdentifier:            Optional[str]  = None  # e.g. "2024 WL 47632" or "2024 LX 18483" — electronic DB (B10.1.4(i))
     weightParenthetical:     Optional[str]  = None  # e.g. "per curiam", "5-4 decision", "Stevens, J., dissenting"
     explanatoryParenthetical:Optional[str]  = None  # e.g. "holding that the statute was unconstitutional"
     isScotus:                bool           = False

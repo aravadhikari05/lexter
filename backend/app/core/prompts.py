@@ -49,6 +49,7 @@ Required shape:
   "year":                    string | null,
   "fullDate":                string | null,
   "docket":                  string | null,
+  "dbIdentifier":            string | null,
   "weightParenthetical":     string | null,
   "explanatoryParenthetical":string | null,
   "isScotus":                boolean,
@@ -66,6 +67,7 @@ Field rules:
 - jurisdiction: one of "SCOTUS", "Circuit", "District", "State", "Unknown"
 - pincite: extract if present, never put in missingFields
 - fullDate: for unpublished/unreported cases only — the full decision date in Bluebook format (e.g. "Dec. 30, 1977"). Null for published cases.
+- dbIdentifier: for electronic database citations (B10.1.4(i)) — the database identifier, e.g. "2024 WL 47632" (Westlaw) or "2024 LX 18483" (LexisNexis). Null if not an electronic database citation.
 - weightParenthetical: extract if present — weight-of-authority info following the date parenthetical, e.g. "per curiam", "5-4 decision", "Stevens, J., dissenting", "en banc". Extract WITHOUT the outer parens. Null if absent.
 - explanatoryParenthetical: extract if present — explanatory text following the date (and weight) parenthetical, e.g. "holding that the statute violated due process". Extract WITHOUT the outer parens. Null if absent.
 

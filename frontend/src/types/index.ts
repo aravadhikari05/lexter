@@ -8,6 +8,7 @@ export interface ParseResponse {
   year?:                     string | null
   fullDate?:                 string | null
   docket?:                   string | null
+  dbIdentifier?:             string | null
   weightParenthetical?:      string | null
   explanatoryParenthetical?: string | null
   isScotus?:                 boolean
@@ -18,10 +19,11 @@ export interface ParseResponse {
 }
 
 export interface CitationResult {
-  academicFull: string
-  shortForm:    string
-  fullCitation: string
-  rulesUsed:    string[]
+  academicFull:         string
+  shortForm:            string
+  fullCitation:         string
+  rulesUsed:            string[]
+  validationWarnings?:  string[]
 }
 
 export interface TickerStep {

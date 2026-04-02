@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Pencil } from 'lucide-react'
+import { Pencil, AlertTriangle, ChevronDown } from 'lucide-react'
 import type { CitationResult } from '../types'
 
 interface Tab {
@@ -19,6 +19,9 @@ interface Props {
 export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
   const [tab, setTab]       = useState<string>('acad')
   const [copied, setCopied] = useState<string | null>(null)
+  const [warningsOpen, setWarningsOpen] = useState(false)
+
+  const warnings = result.validationWarnings ?? []
 
   const TABS: Tab[] = [
     { key: 'acad',  label: 'ACADEMIC',     rule: 'Rule 10 · small caps', dot: 'var(--accent)', html: result.academicFull },
@@ -132,6 +135,54 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
             </div>
           ))}
         </div>
+
+        {/* ── Validation warnings ── */}
+        {warnings.length > 0 && (
+          <div style={{ borderTop: '1px solid var(--border)' }}>
+            <button
+              onClick={() => setWarningsOpen(o => !o)}
+              style={{
+                width: '100%', cursor: 'pointer',
+                background: 'none', border: 'none',
+                padding: '6px 14px',
+                display: 'flex', alignItems: 'center', gap: 6,
+                color: 'var(--amber, #d4a017)',
+              }}
+            >
+              <AlertTriangle size={11} style={{ flexShrink: 0 }} />
+              <span style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 9, letterSpacing: '.08em',
+              }}>
+                {warnings.length} {warnings.length === 1 ? 'WARNING' : 'WARNINGS'}
+              </span>
+              <ChevronDown
+                size={11}
+                style={{
+                  marginLeft: 'auto', flexShrink: 0,
+                  transform: warningsOpen ? 'rotate(180deg)' : 'rotate(0)',
+                  transition: 'transform .15s',
+                }}
+              />
+            </button>
+            {warningsOpen && (
+              <ul style={{
+                margin: 0, padding: '0 14px 8px 30px',
+                listStyle: 'disc',
+              }}>
+                {warnings.map((w, i) => (
+                  <li key={i} style={{
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: 10, lineHeight: 1.7,
+                    color: 'var(--amber, #d4a017)',
+                  }}>
+                    {w}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* ── Footer: rules + optional CourtListener source ── */}
         <div style={{

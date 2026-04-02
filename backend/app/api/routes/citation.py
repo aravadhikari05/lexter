@@ -78,6 +78,7 @@ async def _orchestrate_stream(raw_input: str):
         "year":                     parsed.year,
         "fullDate":                 parsed.fullDate,
         "docket":                   parsed.docket,
+        "dbIdentifier":             parsed.dbIdentifier,
         "weightParenthetical":      parsed.weightParenthetical,
         "explanatoryParenthetical": parsed.explanatoryParenthetical,
         "isScotus":                 parsed.isScotus,

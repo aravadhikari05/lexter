@@ -123,6 +123,7 @@ def _format_published(
     volume = fields["volume"].strip()
     reporter = fields["reporter"].strip()
     first_page = fields["firstPage"].strip()
+    pincite = (fields.get("pincite") or "").strip()
     year = fields["year"].strip()
     court = fields.get("court", "").strip()
 
@@ -133,19 +134,20 @@ def _format_published(
     if suffix:
         rules_used.append("Rule 10.6")
 
-    # Both academic (Rule 10) and practitioner (B10) use italics for case names.
-    # Small caps applies to book/article authors, NOT to case names.
+    cite_core = f"{volume} {reporter} {first_page}, {pincite}" if pincite else f"{volume} {reporter} {first_page}"
+
     academic_full = _normalize(
         f"<em>{case_name}</em>, "
-        f"{volume} {reporter} {first_page} {parenthetical}{suffix}."
+        f"{cite_core} {parenthetical}{suffix}."
     )
     full_citation = _normalize(
         f"<em>{case_name}</em>, "
-        f"{volume} {reporter} {first_page} {parenthetical}{suffix}."
+        f"{cite_core} {parenthetical}{suffix}."
     )
-    # Short form never includes parentheticals (Rule 10.9)
+    # Rule 10.9: short form uses pincite when present, otherwise firstPage
+    at_page = pincite or first_page
     short_form = _normalize(
-        f"<em>{short_party}</em>, {volume} {reporter} at {first_page}."
+        f"<em>{short_party}</em>, {volume} {reporter} at {at_page}."
     )
 
     return GenerateResponse(
@@ -179,6 +181,7 @@ def _format_unpublished(
         _require(fields, "court")
 
     docket = fields["docket"].strip()
+    pincite = (fields.get("pincite") or "").strip()
     court = fields.get("court", "").strip()
 
     rules_used.extend(["B10.1.4", "Rule 10.5(b)"])
@@ -188,16 +191,19 @@ def _format_unpublished(
     if suffix:
         rules_used.append("Rule 10.6")
 
+    slip_pin = f", slip op. at {pincite}" if pincite else ""
+
     academic_full = _normalize(
-        f"<em>{case_name}</em>, No. {docket} {parenthetical}{suffix}."
+        f"<em>{case_name}</em>, No. {docket}{slip_pin} {parenthetical}{suffix}."
     )
     full_citation = _normalize(
-        f"<em>{case_name}</em>, No. {docket} {parenthetical}{suffix}."
+        f"<em>{case_name}</em>, No. {docket}{slip_pin} {parenthetical}{suffix}."
     )
-    # Rule 10.9(a)(iii): slip opinion short form is "Party, slip op." (no docket, no parentheticals)
-    short_form = _normalize(
-        f"<em>{short_party}</em>, slip op."
-    )
+    # Rule 10.9(a)(iii): slip opinion short form
+    if pincite:
+        short_form = _normalize(f"<em>{short_party}</em>, slip op. at {pincite}.")
+    else:
+        short_form = _normalize(f"<em>{short_party}</em>, slip op.")
 
     return GenerateResponse(
         academicFull=academic_full,

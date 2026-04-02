@@ -69,18 +69,22 @@ async def _orchestrate_stream(raw_input: str):
 
     # ── Emit extracted JSON ───────────────────────────────────────────────────
     extracted = {
-        "caseName":          parsed.caseName,
-        "volume":            parsed.volume,
-        "reporter":          parsed.reporter,
-        "firstPage":         parsed.firstPage,
-        "pincite":           parsed.pincite,
-        "court":             parsed.court,
-        "year":              parsed.year,
-        "isScotus":          parsed.isScotus,
-        "isUnpublished":     parsed.isUnpublished,
-        "jurisdiction":      parsed.jurisdiction,
-        "missingFields":     parsed.missingFields     or [],
-        "needsConfirmation": parsed.needsConfirmation or [],
+        "caseName":                 parsed.caseName,
+        "volume":                   parsed.volume,
+        "reporter":                 parsed.reporter,
+        "firstPage":                parsed.firstPage,
+        "pincite":                  parsed.pincite,
+        "court":                    parsed.court,
+        "year":                     parsed.year,
+        "fullDate":                 parsed.fullDate,
+        "docket":                   parsed.docket,
+        "weightParenthetical":      parsed.weightParenthetical,
+        "explanatoryParenthetical": parsed.explanatoryParenthetical,
+        "isScotus":                 parsed.isScotus,
+        "isUnpublished":            parsed.isUnpublished,
+        "jurisdiction":             parsed.jurisdiction,
+        "missingFields":            parsed.missingFields     or [],
+        "needsConfirmation":        parsed.needsConfirmation or [],
     }
     yield sse({"type": "extracted", "data": extracted})
     await asyncio.sleep(0.15)

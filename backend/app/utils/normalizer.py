@@ -437,7 +437,51 @@ def derive_jurisdiction(reporter: str | None, court: str | None) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 4. PUBLIC API
+# ══════════════════════════════════════════════════════════════════════════════
+# 4. CASE-NAME CAPITALIZATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+_LOWERCASE_WORDS = frozenset({
+    "v.", "v", "of", "the", "in", "on", "at", "for", "and", "by", "to",
+    "a", "an", "or", "re", "ex", "rel",
+})
+
+
+def _capitalize_word(word: str) -> str:
+    """Capitalize the first letter of a word, preserving the rest.
+
+    Handles contractions and possessives (O'Brien, McDonald) correctly
+    by only touching the first character.
+    """
+    if not word:
+        return word
+    return word[0].upper() + word[1:]
+
+
+def _title_case_name(name: str) -> str:
+    """Title-case a case name per Bluebook convention.
+
+    Capitalizes each word except articles, prepositions, and 'v.' when
+    they are not the first word. Preserves individual acronyms (FBI,
+    NLRB) within mixed-case text, but normalizes everything if the
+    entire input is shouted uppercase.
+    """
+    if name == name.upper():
+        name = name.lower()
+    words = name.split()
+    result: list[str] = []
+    for i, word in enumerate(words):
+        if word.lower() in _LOWERCASE_WORDS and i > 0:
+            result.append(word.lower())
+        elif word == word.upper() and len(word) > 1:
+            result.append(word)
+        else:
+            result.append(_capitalize_word(word))
+    return " ".join(result)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 5. PUBLIC API
 # ══════════════════════════════════════════════════════════════════════════════
 
 def normalize(parsed: ParseResponse) -> ParseResponse:
@@ -453,7 +497,7 @@ def normalize(parsed: ParseResponse) -> ParseResponse:
     parsed.isScotus = (parsed.reporter or "") in SCOTUS_REPORTERS
     parsed.jurisdiction = derive_jurisdiction(parsed.reporter, parsed.court)
     if parsed.caseName:
-        parsed.caseName = t6_abbreviate(parsed.caseName)
+        parsed.caseName = t6_abbreviate(_title_case_name(parsed.caseName))
     return parsed
 
 
@@ -471,5 +515,5 @@ def normalize_fields(fields: dict) -> dict:
     fields["isScotus"] = reporter in SCOTUS_REPORTERS
     fields["jurisdiction"] = derive_jurisdiction(reporter, fields.get("court"))
     if fields.get("caseName"):
-        fields["caseName"] = t6_abbreviate(fields["caseName"])
+        fields["caseName"] = t6_abbreviate(_title_case_name(fields["caseName"]))
     return fields

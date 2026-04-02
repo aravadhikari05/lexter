@@ -7,6 +7,7 @@ from app.utils.normalizer import (
     derive_jurisdiction,
     normalize,
     normalize_fields,
+    _title_case_name,
     CANONICAL_REPORTERS,
     SCOTUS_REPORTERS,
 )
@@ -125,6 +126,37 @@ class TestDeriveJurisdiction:
         assert derive_jurisdiction("", "") == "Unknown"
 
 
+# ── Case-name title casing ────────────────────────────────────────────────────
+
+class TestTitleCaseName:
+    def test_all_lowercase(self):
+        assert _title_case_name("brown v. board of education") == "Brown v. Board of Education"
+
+    def test_already_correct(self):
+        assert _title_case_name("Brown v. Board of Education") == "Brown v. Board of Education"
+
+    def test_all_uppercase_gets_normalized(self):
+        assert _title_case_name("BROWN V. BOARD OF EDUCATION") == "Brown v. Board of Education"
+
+    def test_v_without_period(self):
+        assert _title_case_name("brown v board of education") == "Brown v Board of Education"
+
+    def test_preserves_acronyms(self):
+        assert _title_case_name("NLRB v. jones") == "NLRB v. Jones"
+
+    def test_preserves_mixed_case(self):
+        assert _title_case_name("mcdonald v. chicago") == "Mcdonald v. Chicago"
+
+    def test_in_re(self):
+        assert _title_case_name("in re estate of smith") == "In re Estate of Smith"
+
+    def test_first_word_always_capitalized(self):
+        assert _title_case_name("of counsel v. bar association") == "Of Counsel v. Bar Association"
+
+    def test_empty_string(self):
+        assert _title_case_name("") == ""
+
+
 # ── Full normalize() on ParseResponse ─────────────────────────────────────────
 
 class TestNormalize:
@@ -142,6 +174,19 @@ class TestNormalize:
         assert result.isScotus is True
         assert result.jurisdiction == "SCOTUS"
         assert "Educ." in result.caseName  # T6 abbreviation applied
+
+    def test_lowercase_input_gets_capitalized(self):
+        p = ParseResponse(
+            caseName="brown v. board of education",
+            volume="347",
+            reporter="United States Reports",
+            firstPage="483",
+            court="",
+            year="1954",
+        )
+        result = normalize(p)
+        assert result.caseName.startswith("Brown")
+        assert "Educ." in result.caseName
 
     def test_circuit_case(self):
         p = ParseResponse(

@@ -9,6 +9,7 @@ from app.services.citation_validator import (
     validate_citation,
     sanitize_output,
 )
+from app.services.normalizer import normalize_fields
 
 log = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ log = logging.getLogger(__name__)
 async def generate_citation(req: GenerateRequest, source_type: str = "case") -> GenerateResponse:
     merged = req.parsed.model_dump(exclude_none=True)
     merged.update(req.fields)
+    merged = normalize_fields(merged)
 
     if source_type == "case":
         try:

@@ -3,7 +3,7 @@ from app.core.prompts import PARSE_SYSTEM
 from app.schemas.citation import ParseRequest, ParseResponse
 from app.services.rule_lookup import get_general_rules
 from app.services.missing_fields import check_missing_fields
-from app.services.t6_abbreviator import t6_abbreviate
+from app.services.normalizer import normalize
 
 
 async def parse_citation(req: ParseRequest, source_type: str = "case") -> ParseResponse:
@@ -23,9 +23,8 @@ async def parse_citation(req: ParseRequest, source_type: str = "case") -> ParseR
     data = safe_json(text)
     parsed = ParseResponse(**data)
 
-    # Deterministic T6 abbreviation on case name (Rule 10.2.2)
-    if parsed.caseName:
-        parsed.caseName = t6_abbreviate(parsed.caseName)
+    # Deterministic normalization: T6, reporter, court, isScotus, jurisdiction
+    parsed = normalize(parsed)
 
     # Override LLM's missing-field decision with deterministic check
     missing, needs_conf = check_missing_fields(parsed)

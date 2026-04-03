@@ -7,7 +7,7 @@ import ConfirmBubble from './components/ConfirmBubble'
 import CitationCards from './components/CitationCards'
 import StepTicker from './components/StepTicker'
 
-const API = 'http://localhost:8000'
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 const uid = () => Math.random().toString(36).slice(2)
 

@@ -14,7 +14,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://lexter-alpha.vercel.app/"
+        "https://lexter-alpha.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],

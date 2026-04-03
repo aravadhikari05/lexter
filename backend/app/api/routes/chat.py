@@ -40,6 +40,7 @@ async def stream_chat(req: ChatRequest):
                 delta = chunk.choices[0].delta.content if chunk.choices else None
                 if delta:
                     full += delta
+            print("LLM RAW:", repr(full))
         except Exception as e:
             yield sse({"type": "error", "message": str(e)})
             yield sse({"type": "done"})

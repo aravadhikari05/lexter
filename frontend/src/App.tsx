@@ -1,5 +1,5 @@
 // src/App.tsx
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import type { ChatMessage, ParseResponse, CitationResult } from './types'
 import type { IntentId, SourceId } from './components/SourceSelector'
@@ -13,6 +13,12 @@ import { supabase } from './lib/supabase'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 const uid = () => Math.random().toString(36).slice(2)
+
+export interface ConversationMeta {
+  id: string
+  title: string
+  updated_at: string
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
@@ -31,11 +37,27 @@ export default function App() {
   const [pendingEdits,   setPendingEdits]   = useState<Record<string, string>>({})
   const [confirmWorking, setConfirmWorking] = useState(false)
 
+  const [currentConvId, setCurrentConvId] = useState<string | null>(null)
+  const [conversations,  setConversations] = useState<ConversationMeta[]>([])
+
+  // Refs so async functions always read the latest values, no stale closure issues
+  const sessionRef        = useRef<Session | null>(null)
+  const currentConvIdRef  = useRef<string | null>(null)
+  const selectedIntentRef = useRef<IntentId>('create')
+  const selectedSourceRef = useRef<SourceId>('case')
+  const messagesRef       = useRef<ChatMessage[]>([])
+
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
   const fileRef   = useRef<HTMLInputElement>(null)
 
-  // ── Hooks — must all be above any early returns ───────────────────────────
+  // Keep refs in sync with state
+  useEffect(() => { sessionRef.current = session ?? null },         [session])
+  useEffect(() => { selectedIntentRef.current = selectedIntent },   [selectedIntent])
+  useEffect(() => { selectedSourceRef.current = selectedSource },   [selectedSource])
+  useEffect(() => { messagesRef.current = messages },               [messages])
+
+  // ── Auth ───────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -44,16 +66,112 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (!session) { setConversations([]); return }
+    loadConversations()
+  }, [session])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // ── Handlers — also above early returns ───────────────────────────────────
+  // ── Conversation persistence — all wrapped in try/catch, all non-fatal ─────
+
+  const loadConversations = async () => {
+    try {
+      const { data } = await supabase
+        .from('conversations')
+        .select('id, title, updated_at')
+        .order('updated_at', { ascending: false })
+      if (data) setConversations(data as ConversationMeta[])
+    } catch { /* table may not exist yet — silently ignore */ }
+  }
+
+  const ensureConversation = async (title: string): Promise<string | null> => {
+    if (currentConvIdRef.current) return currentConvIdRef.current
+    const sess = sessionRef.current
+    if (!sess) return null
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .insert({ user_id: sess.user.id, title: title.slice(0, 60) })
+        .select('id')
+        .single()
+      if (error || !data) return null
+      const id = (data as { id: string }).id
+      currentConvIdRef.current = id
+      setCurrentConvId(id)
+      return id
+    } catch {
+      return null
+    }
+  }
+
+  const touchConversation = async (convId: string) => {
+    try {
+      await supabase
+        .from('conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', convId)
+      loadConversations()
+    } catch { /* silently ignore */ }
+  }
+
+  const saveMessage = async (
+    convId: string,
+    role: string,
+    type: string,
+    text?: string,
+    metadata?: Record<string, unknown>,
+  ) => {
+    try {
+      await supabase.from('messages').insert({
+        conversation_id: convId,
+        role,
+        type,
+        text: text ?? null,
+        metadata: metadata ?? null,
+      })
+    } catch { /* silently ignore */ }
+  }
+
+  const handleSelectChat = async (convId: string) => {
+    if (convId === currentConvIdRef.current) return
+    currentConvIdRef.current = convId
+    setCurrentConvId(convId)
+    setBusy(false)
+    setPendingParsed(null)
+    setPendingEdits({})
+    setInput('')
+    setFile(null)
+    setFileText('')
+    try {
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true })
+      if (data) {
+        setMessages((data as any[]).map(m => ({
+          id:       uid(),
+          role:     m.role as 'user' | 'assistant',
+          type:     m.type as ChatMessage['type'],
+          text:     m.text ?? undefined,
+          citation: m.metadata?.citation ?? undefined,
+        })))
+      }
+    } catch { /* silently ignore */ }
+  }
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
   const addMsg = (msg: Omit<ChatMessage, 'id'>) =>
     setMessages(prev => [...prev, { id: uid(), ...msg }])
 
   const handleNewChat = () => {
-    setMessages([]); setInput(''); setFile(null); setFileText(''); setBusy(false)
+    setMessages([]); setInput(''); setFile(null); setFileText('')
+    setBusy(false); setPendingParsed(null); setPendingEdits({})
+    currentConvIdRef.current = null
+    setCurrentConvId(null)
   }
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,11 +184,12 @@ export default function App() {
   const handleSignOut = () => supabase.auth.signOut()
 
   // ── Chat stream ────────────────────────────────────────────────────────────
-  const runChat = async (userText: string, content: string) => {
+  const runChat = async (userText: string, content: string, convId: string | null) => {
     const thinkId = uid()
     addMsg({ id: thinkId, role: 'assistant', type: 'thinking' } as ChatMessage)
 
-    const history = messages.slice(-10).map(m => ({ role: m.role, content: m.text || '' }))
+    // Use ref for messages to get latest value at call time
+    const history = messagesRef.current.slice(-10).map(m => ({ role: m.role, content: m.text || '' }))
     history.push({ role: 'user', content })
 
     const asstId = uid()
@@ -83,8 +202,8 @@ export default function App() {
         body: JSON.stringify({
           message:     userText,
           history,
-          intent:      selectedIntent,
-          source_type: selectedSource,
+          intent:      selectedIntentRef.current,
+          source_type: selectedSourceRef.current,
         }),
       })
       if (!res.ok) throw new Error('chat failed')
@@ -142,9 +261,14 @@ export default function App() {
           }
 
           if (evt.type === 'citation') {
+            const citData = evt.data as CitationResult
             setMessages(prev => prev.map(m =>
-              m.id === asstId ? { ...m, type: 'citation' as const, citation: evt.data as CitationResult } : m
+              m.id === asstId ? { ...m, type: 'citation' as const, citation: citData } : m
             ))
+            if (convId) {
+              await saveMessage(convId, 'assistant', 'citation', undefined, { citation: citData })
+              await touchConversation(convId)
+            }
             setBusy(false)
             return
           }
@@ -154,17 +278,23 @@ export default function App() {
             setMessages(prev => {
               const without = prev.filter(m => m.id !== thinkId)
               const exists  = without.find(m => m.id === asstId)
-              if (exists) return without.map(m => m.id === asstId ? { ...m, text: fullText, streaming: true } : m)
+              if (exists) return without.map(m => m.id === asstId ? { ...m, type: 'text' as const, text: fullText, streaming: true } : m)
               return [...without, { id: asstId, role: 'assistant' as const, type: 'text' as const, text: fullText, streaming: true }]
             })
           }
         }
       }
+
       setMessages(prev =>
         prev.filter(m => m.id !== thinkId).map(m =>
           m.id === asstId ? { ...m, streaming: false } : m
         )
       )
+
+      if (fullText && convId) {
+        await saveMessage(convId, 'assistant', 'text', fullText)
+        await touchConversation(convId)
+      }
     } catch {
       setMessages(prev => prev.filter(m => m.id !== thinkId))
       addMsg({ role: 'assistant', type: 'text', text: 'Something went wrong — try again.' })
@@ -190,7 +320,7 @@ export default function App() {
       const res = await fetch(`${API}/chat/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parsed: merged, source_type: selectedSource }),
+        body: JSON.stringify({ parsed: merged, source_type: selectedSourceRef.current }),
       })
       if (!res.ok) throw new Error('generate failed')
 
@@ -213,8 +343,7 @@ export default function App() {
           if (evt.type === 'error') {
             setMessages(prev => prev.filter(m => m.id !== tickerId))
             addMsg({ role: 'assistant', type: 'text', text: `Generation failed: ${evt.message || 'unknown error'}` })
-            setPendingParsed(null)
-            setPendingEdits({})
+            setPendingParsed(null); setPendingEdits({})
             setConfirmWorking(false)
             return
           }
@@ -232,9 +361,15 @@ export default function App() {
           }
 
           if (evt.type === 'citation') {
+            const citData = evt.data as CitationResult
             setMessages(prev => prev.map(m =>
-              m.id === tickerId ? { ...m, type: 'citation' as const, citation: evt.data as CitationResult } : m
+              m.id === tickerId ? { ...m, type: 'citation' as const, citation: citData } : m
             ))
+            const convId = currentConvIdRef.current
+            if (convId) {
+              await saveMessage(convId, 'assistant', 'citation', undefined, { citation: citData })
+              await touchConversation(convId)
+            }
             break
           }
         }
@@ -243,8 +378,7 @@ export default function App() {
       addMsg({ role: 'assistant', type: 'text', text: 'Generation failed — try again.' })
     }
 
-    setPendingParsed(null)
-    setPendingEdits({})
+    setPendingParsed(null); setPendingEdits({})
     setConfirmWorking(false)
   }
 
@@ -252,8 +386,8 @@ export default function App() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
-  // ── useCallback — still above early returns ────────────────────────────────
-  const send = useCallback(async (text?: string) => {
+  // ── Send — plain async, refs handle freshness, no useCallback needed ───────
+  const send = async (text?: string) => {
     const userText = (text || input).trim()
     if (!userText || busy) return
     setInput(''); setBusy(true)
@@ -262,10 +396,17 @@ export default function App() {
     addMsg({ role: 'user', type: 'text', text: userText, fileName: file?.name })
     setFile(null); setFileText('')
 
-    await runChat(userText, content)
-  }, [input, busy, messages, file, fileText, selectedIntent, selectedSource])
+    // Persistence is best-effort — if DB not set up, chat still works
+    const convId = await ensureConversation(userText)
+    if (convId) {
+      await saveMessage(convId, 'user', 'text', userText)
+      await touchConversation(convId)
+    }
 
-  // ── Early returns — AFTER all hooks ───────────────────────────────────────
+    await runChat(userText, content, convId)
+  }
+
+  // ── Early returns ──────────────────────────────────────────────────────────
 
   if (session === undefined) {
     return (
@@ -324,7 +465,12 @@ export default function App() {
         @keyframes glowPulse { 0%,100% { opacity:.6; } 50% { opacity:1; } }
       `}</style>
 
-      <Sidebar onNewChat={handleNewChat} />
+      <Sidebar
+        onNewChat={handleNewChat}
+        onSelectChat={handleSelectChat}
+        conversations={conversations}
+        activeConvId={currentConvId}
+      />
 
       <div style={s.shell}>
         <div style={s.header}>

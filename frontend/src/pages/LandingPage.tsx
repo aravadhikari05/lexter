@@ -54,11 +54,10 @@ const TRUST_BULLETS = [
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const mono = "'DM Mono', monospace"
+const mono  = "'DM Mono', monospace"
 const serif = "'Lora', serif"
 
 const S = {
-  // Layout
   root: {
     minHeight: '100vh',
     background: 'var(--bg)',
@@ -67,7 +66,6 @@ const S = {
     overflow: 'hidden',
   } satisfies React.CSSProperties,
 
-  // Left panel
   left: {
     display: 'flex',
     flexDirection: 'column',
@@ -150,18 +148,8 @@ const S = {
     marginBottom: 26,
   } satisfies React.CSSProperties,
 
-  eyebrowLine: {
-    width: 18,
-    height: 1,
-    background: 'var(--accent)',
-  } satisfies React.CSSProperties,
-
-  eyebrowText: {
-    fontFamily: mono,
-    fontSize: 9,
-    letterSpacing: '.2em',
-    color: 'var(--accent)',
-  } satisfies React.CSSProperties,
+  eyebrowLine:  { width: 18, height: 1, background: 'var(--accent)' } satisfies React.CSSProperties,
+  eyebrowText:  { fontFamily: mono, fontSize: 9, letterSpacing: '.2em', color: 'var(--accent)' } satisfies React.CSSProperties,
 
   headline: {
     fontFamily: serif,
@@ -187,7 +175,6 @@ const S = {
 
   stats: { display: 'flex', gap: 0 } satisfies React.CSSProperties,
 
-  // Ticker
   tickerWrap: {
     position: 'relative',
     zIndex: 1,
@@ -211,7 +198,6 @@ const S = {
 
   tickerDot: { color: 'var(--accent)', marginRight: 10 } satisfies React.CSSProperties,
 
-  // Right panel
   right: {
     display: 'flex',
     flexDirection: 'column',
@@ -286,38 +272,6 @@ const S = {
     letterSpacing: '.03em',
   } satisfies React.CSSProperties,
 
-  // Done state
-  doneWrap: { textAlign: 'center', padding: '24px 0' } satisfies React.CSSProperties,
-
-  doneIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: '50%',
-    background: 'var(--accent-bg)',
-    border: '1px solid var(--accent-bdr)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '0 auto 14px',
-    fontSize: 18,
-  } satisfies React.CSSProperties,
-
-  doneTitle: {
-    fontFamily: serif,
-    fontSize: 15,
-    color: 'var(--text)',
-    margin: '0 0 6px',
-    fontStyle: 'italic',
-  } satisfies React.CSSProperties,
-
-  doneSub: {
-    fontFamily: mono,
-    fontSize: 9,
-    color: 'var(--dimmer)',
-    margin: 0,
-    letterSpacing: '.04em',
-  } satisfies React.CSSProperties,
-
   switchText: {
     marginTop: 16,
     fontFamily: mono,
@@ -352,49 +306,25 @@ const S = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function statItemStyle(i: number): React.CSSProperties {
-  return {
-    padding: '16px 32px',
-    background: 'var(--surface)',
-    border: '1px solid var(--border-b)',
-    borderLeft: i > 0 ? 'none' : '1px solid var(--border-b)',
-    borderRadius:
-      i === 0 ? '8px 0 0 8px'
-      : i === STATS.length - 1 ? '0 8px 8px 0'
-      : '0',
-  }
-}
-
 function modeButtonStyle(active: boolean): React.CSSProperties {
   return {
-    flex: 1,
-    padding: '8px 12px',
-    fontFamily: mono,
-    fontSize: 9,
-    letterSpacing: '.12em',
+    flex: 1, padding: '8px 12px',
+    fontFamily: mono, fontSize: 9, letterSpacing: '.12em',
     background: active ? 'var(--surface)' : 'transparent',
     color: active ? 'var(--text)' : 'var(--dimmer)',
     border: active ? '1px solid var(--border-b)' : '1px solid transparent',
-    borderRadius: 7,
-    cursor: 'pointer',
-    transition: 'all .15s',
+    borderRadius: 7, cursor: 'pointer', transition: 'all .15s',
     textTransform: 'uppercase',
   }
 }
 
 function submitButtonStyle(disabled: boolean): React.CSSProperties {
   return {
-    marginTop: 32,
-    width: '100%',
-    padding: '13px',
-    fontFamily: mono,
-    fontSize: 10,
-    letterSpacing: '.14em',
-    fontWeight: 600,
+    marginTop: 32, width: '100%', padding: '13px',
+    fontFamily: mono, fontSize: 10, letterSpacing: '.14em', fontWeight: 600,
     background: disabled ? 'var(--surface2)' : 'var(--accent)',
     color: disabled ? 'var(--dimmer)' : '#111009',
-    border: 'none',
-    borderRadius: 10,
+    border: 'none', borderRadius: 10,
     cursor: disabled ? 'not-allowed' : 'pointer',
     transition: 'background .15s, transform .1s',
     textTransform: 'uppercase',
@@ -418,12 +348,10 @@ function CitationDemo() {
   const clear = () => { if (timerRef.current) clearTimeout(timerRef.current) }
   const delay = (fn: () => void, ms: number) => { timerRef.current = setTimeout(fn, ms) }
 
-  // Run the full demo sequence
   useEffect(() => {
     clear()
     setTyped(''); setStepIdx(0); setDoneSteps([]); setPhase('typing')
 
-    // Type the input char by char
     let i = 0
     const typeNext = () => {
       if (i < ex.input.length) {
@@ -434,7 +362,6 @@ function CitationDemo() {
       }
     }
 
-    // Cycle through steps
     const startSteps = () => {
       setPhase('steps')
       let s = 0
@@ -468,19 +395,13 @@ function CitationDemo() {
 
   return (
     <div style={{
-      background: 'var(--surface)',
-      border: '1px solid var(--border-b)',
-      borderRadius: 12,
-      overflow: 'hidden',
-      boxShadow: '0 2px 12px rgba(0,0,0,.25)',
-      width: '100%',
+      background: 'var(--surface)', border: '1px solid var(--border-b)',
+      borderRadius: 12, overflow: 'hidden',
+      boxShadow: '0 2px 12px rgba(0,0,0,.25)', width: '100%',
     }}>
-      {/* Header bar */}
       <div style={{
-        background: 'var(--surface2)',
-        borderBottom: '1px solid var(--border)',
-        padding: '7px 12px',
-        display: 'flex', alignItems: 'center', gap: 6,
+        background: 'var(--surface2)', borderBottom: '1px solid var(--border)',
+        padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 6,
       }}>
         {['#e05c5c','#d4a017','#4caf50'].map(c => (
           <div key={c} style={{ width: 7, height: 7, borderRadius: '50%', background: c, opacity: .6 }} />
@@ -491,8 +412,6 @@ function CitationDemo() {
       </div>
 
       <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-
-        {/* Input */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontFamily: mono, fontSize: 8, letterSpacing: '.12em', color: 'var(--dimmer)' }}>INPUT</span>
           <div style={{
@@ -512,7 +431,6 @@ function CitationDemo() {
           </div>
         </div>
 
-        {/* Steps — fixed height, items fade in */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, height: 76 }}>
           {ex.steps.map((step, i) => {
             const isDone    = doneSteps.includes(i)
@@ -521,8 +439,7 @@ function CitationDemo() {
             return (
               <div key={i} style={{
                 display: 'flex', alignItems: 'center', gap: 7,
-                opacity: visible ? (isDone ? .7 : 1) : 0,
-                transition: 'opacity .2s',
+                opacity: visible ? (isDone ? .7 : 1) : 0, transition: 'opacity .2s',
               }}>
                 <div style={{
                   width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
@@ -532,8 +449,7 @@ function CitationDemo() {
                 }} />
                 <span style={{
                   fontFamily: mono, fontSize: 9, letterSpacing: '.06em',
-                  color: isRunning ? 'var(--accent)' : 'var(--muted)',
-                  transition: 'color .2s',
+                  color: isRunning ? 'var(--accent)' : 'var(--muted)', transition: 'color .2s',
                 }}>
                   {step}
                 </span>
@@ -545,7 +461,6 @@ function CitationDemo() {
           })}
         </div>
 
-        {/* Output — fixed height, fades in */}
         <div style={{ height: 52, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{
             fontFamily: mono, fontSize: 8, letterSpacing: '.12em', color: 'var(--accent)',
@@ -555,13 +470,11 @@ function CitationDemo() {
             background: 'var(--accent-bg)', border: '1px solid var(--accent-bdr)',
             borderRadius: 6, padding: '7px 10px',
             fontFamily: serif, fontSize: 12, color: 'var(--text)', lineHeight: 1.5,
-            opacity: showResult ? 1 : 0,
-            transition: 'opacity .35s ease',
+            opacity: showResult ? 1 : 0, transition: 'opacity .35s ease',
           }}
             dangerouslySetInnerHTML={{ __html: ex.output }}
           />
         </div>
-
       </div>
     </div>
   )
@@ -575,7 +488,6 @@ export default function LandingPage() {
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
-  const [done,     setDone]     = useState(false)
   const [mounted,  setMounted]  = useState(false)
 
   useEffect(() => {
@@ -591,30 +503,39 @@ export default function LandingPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setError(error.message)
     } else {
-      const { error } = await supabase.auth.signUp({ email, password })
-      if (error) setError(error.message)
-      else setDone(true)
+      // Sign up then immediately sign in — requires email confirmation disabled in Supabase dashboard
+      const { error: signUpError } = await supabase.auth.signUp({ email, password })
+      if (signUpError) {
+        setError(signUpError.message)
+        setLoading(false)
+        return
+      }
+      // Auto sign-in after signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) {
+        // Account created but couldn't sign in — likely email confirm still enabled in Supabase
+        setError('Account created! Check your email to confirm, then sign in.')
+      }
     }
 
     setLoading(false)
   }
 
-  const switchMode = (m: AuthMode) => { setMode(m); setError(null); setDone(false) }
+  const switchMode = (m: AuthMode) => { setMode(m); setError(null) }
 
-  // Staggered fade-in
   const tr = (delay: number): React.CSSProperties => ({
     opacity: mounted ? 1 : 0,
     transform: mounted ? 'none' : 'translateY(12px)',
     transition: `opacity .55s ${delay}s ease, transform .55s ${delay}s ease`,
   })
 
-  const isDisabled = loading || !email || !password
-  const tickerItems = [...TICKER_CITES, ...TICKER_CITES] // doubled for seamless loop
+  const isDisabled  = loading || !email || !password
+  const tickerItems = [...TICKER_CITES, ...TICKER_CITES]
 
   return (
     <div style={S.root}>
       <style>{`
-        @keyframes ticker   { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+        @keyframes ticker    { from { transform: translateX(0) } to { transform: translateX(-50%) } }
         @keyframes demoBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
         @keyframes demoPing  { 0%,100% { transform: scale(1); opacity: .5; } 50% { transform: scale(1.6); opacity: 1; } }
       `}</style>
@@ -624,7 +545,6 @@ export default function LandingPage() {
         <div style={S.grid} />
         <div style={S.ghost}>Lex</div>
 
-        {/* Nav */}
         <div style={{ ...S.nav, ...tr(0) }}>
           <span style={S.logo}>
             <span style={S.logoAccent}>Lex</span>ter
@@ -632,9 +552,7 @@ export default function LandingPage() {
           <span style={S.edition}>BLUEBOOK 22ND EDITION</span>
         </div>
 
-        {/* Hero content — stacked */}
         <div style={S.content}>
-
           <div style={{ ...S.eyebrow, ...tr(.1) }}>
             <div style={S.eyebrowLine} />
             <span style={S.eyebrowText}>LEGAL CITATION ASSISTANT</span>
@@ -651,14 +569,11 @@ export default function LandingPage() {
             result in seconds.
           </p>
 
-          {/* Demo below text */}
           <div style={{ ...tr(.25) }}>
             <CitationDemo />
           </div>
-
         </div>
 
-        {/* Ticker */}
         <div style={{ ...S.tickerWrap, opacity: mounted ? .45 : 0, transition: 'opacity .8s .5s ease' }}>
           <div style={S.tickerTrack}>
             {tickerItems.map((cite, i) => (
@@ -673,7 +588,6 @@ export default function LandingPage() {
       {/* ── Right panel — auth ── */}
       <div style={{ ...S.right, opacity: mounted ? 1 : 0, transition: 'opacity .6s .25s ease' }}>
 
-        {/* Mode switcher */}
         <div style={S.modeSwitcher}>
           {(['signup', 'login'] as AuthMode[]).map(m => (
             <button key={m} onClick={() => switchMode(m)} style={modeButtonStyle(mode === m)}>
@@ -685,63 +599,49 @@ export default function LandingPage() {
         <h2 style={S.authTitle}>{mode === 'signup' ? 'Start for free.' : 'Welcome back.'}</h2>
         <p style={S.authSub}>{mode === 'signup' ? 'No credit card required' : 'Sign in to your account'}</p>
 
-        {done ? (
-          <div style={S.doneWrap}>
-            <div style={S.doneIcon}>✉</div>
-            <p style={S.doneTitle}>Check your inbox</p>
-            <p style={S.doneSub}>Sent to {email}</p>
-          </div>
-        ) : (
-          <>
-            {/* Fields */}
-            <div style={S.fields}>
-              {[
-                { label: 'Email',    type: 'email',    val: email,    set: setEmail,    ph: 'you@example.com' },
-                { label: 'Password', type: 'password', val: password, set: setPassword, ph: '••••••••' },
-              ].map(f => (
-                <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  <label style={S.fieldLabel}>{f.label}</label>
-                  <input
-                    type={f.type}
-                    value={f.val}
-                    onChange={e => f.set(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                    placeholder={f.ph}
-                    style={S.input}
-                    onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--accent)' }}
-                    onBlur={e =>  { e.currentTarget.style.borderBottomColor = 'var(--border-b)' }}
-                  />
-                </div>
-              ))}
+        <div style={S.fields}>
+          {[
+            { label: 'Email',    type: 'email',    val: email,    set: setEmail,    ph: 'you@example.com' },
+            { label: 'Password', type: 'password', val: password, set: setPassword, ph: '••••••••' },
+          ].map(f => (
+            <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <label style={S.fieldLabel}>{f.label}</label>
+              <input
+                type={f.type}
+                value={f.val}
+                onChange={e => f.set(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                placeholder={f.ph}
+                style={S.input}
+                onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--accent)' }}
+                onBlur={e =>  { e.currentTarget.style.borderBottomColor = 'var(--border-b)' }}
+              />
             </div>
+          ))}
+        </div>
 
-            {error && <p style={S.error}>{error}</p>}
+        {error && <p style={S.error}>{error}</p>}
 
-            {/* Submit */}
-            <button
-              onClick={handleSubmit}
-              disabled={isDisabled}
-              onMouseDown={e => { if (!isDisabled) (e.currentTarget as HTMLButtonElement).style.transform = 'scale(.98)' }}
-              onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none' }}
-              style={submitButtonStyle(isDisabled)}
-            >
-              {loading ? 'PLEASE WAIT…' : mode === 'signup' ? 'GET STARTED →' : 'SIGN IN →'}
-            </button>
+        <button
+          onClick={handleSubmit}
+          disabled={isDisabled}
+          onMouseDown={e => { if (!isDisabled) (e.currentTarget as HTMLButtonElement).style.transform = 'scale(.98)' }}
+          onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none' }}
+          style={submitButtonStyle(isDisabled)}
+        >
+          {loading ? 'PLEASE WAIT…' : mode === 'signup' ? 'GET STARTED →' : 'SIGN IN →'}
+        </button>
 
-            {/* Mode switch link */}
-            <p style={S.switchText}>
-              {mode === 'signup' ? 'Have an account? ' : 'No account? '}
-              <span onClick={() => switchMode(mode === 'signup' ? 'login' : 'signup')} style={S.switchLink}>
-                {mode === 'signup' ? 'Sign in' : 'Sign up free'}
-              </span>
-            </p>
+        <p style={S.switchText}>
+          {mode === 'signup' ? 'Have an account? ' : 'No account? '}
+          <span onClick={() => switchMode(mode === 'signup' ? 'login' : 'signup')} style={S.switchLink}>
+            {mode === 'signup' ? 'Sign in' : 'Sign up free'}
+          </span>
+        </p>
 
-            {/* Trust bullets */}
-            <div style={S.trustList}>
-              {TRUST_BULLETS.map(t => <span key={t} style={S.trustItem}>{t}</span>)}
-            </div>
-          </>
-        )}
+        <div style={S.trustList}>
+          {TRUST_BULLETS.map(t => <span key={t} style={S.trustItem}>{t}</span>)}
+        </div>
       </div>
     </div>
   )

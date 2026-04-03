@@ -1,117 +1,200 @@
 """
 citation_lookup.py
 
-Fills in missing citation fields before generation.
+Post-LLM cross-validation against CourtListener.
 
-RIGHT NOW: Uses an LLM call to infer/fill missing fields.
-LATER: Replace `_fetch_from_courtlistener` with a real CourtListener API lookup.
-       The rest of this function stays the same — just swap the data source.
-
-Trust hierarchy:
-  1. CourtListener (verified)  — accepted silently
-  2. LLM parametric recall     — marked "unverified", always needs user confirmation
+Workflow:
+  1. LLM fills ALL fields — from user input or its own knowledge
+  2. parser.py calls mark_auto_filled() to track what the user didn't provide
+  3. cross_validate() searches CL with caseName + volume
+  4. CL verifies/corrects reporter / firstPage / court / year
+  5. autoFilled persists so UI always shows the badge for non-user-provided fields
 """
 
+import re
+import httpx
 from app.schemas.citation import ParseResponse
-from app.core.llm import complete, safe_json
+from app.core.config import settings
 
+CL_SEARCH = "https://www.courtlistener.com/api/rest/v4/search/"
 
-# ─── CourtListener stub ───────────────────────────────────────────────────────
-# TODO: Replace this entire function with a real CourtListener API call.
-#       CourtListener REST API docs: https://www.courtlistener.com/help/api/rest/
-#       Endpoint to use: GET https://www.courtlistener.com/api/rest/v3/search/
-#         params: q=<case name>, type=o (opinions)
-#       Extract: volume, reporter, first_page, court, year from the top result.
-#       Return a dict with the same keys as below.
-async def _fetch_from_courtlistener(case_name: str, parsed: ParseResponse) -> dict:
-    # ── INSERT COURTLISTENER API LOGIC HERE ───────────────────────────────────
-    # For now: fall through to LLM enrichment below.
-    return {}
-
-
-# ─── LLM fallback enrichment ──────────────────────────────────────────────────
-async def _enrich_via_llm(parsed: ParseResponse, missing: list[str]) -> dict:
-    fields_needed = ", ".join(missing)
-    prompt = f"""You are a Bluebook legal citation expert with broad knowledge of U.S. case law.
-
-A citation is missing the following fields: {fields_needed}
-
-Known information:
-- Case name: {parsed.caseName}
-- Volume: {parsed.volume or "unknown"}
-- Reporter: {parsed.reporter or "unknown"}
-- First page: {parsed.firstPage or "unknown"}
-- Court: {parsed.court or "unknown"}
-- Year: {parsed.year or "unknown"}
-
-Fill in the missing fields as accurately as possible based on your knowledge of this case.
-Return ONLY valid JSON with the missing field names as keys. No markdown, no extra text.
-Only include fields that were listed as missing. Be as accurate as possible — this is legal work."""
-
-    text = await complete(
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=200,
-        temperature=0,
-    )
-    try:
-        return safe_json(text)
-    except Exception:
-        return {}
-
-
-# ─── Main enrichment entry point ──────────────────────────────────────────────
-
-ENRICHABLE_FIELDS = {
-    "caseName":  "caseName",
-    "volume":    "volume",
-    "reporter":  "reporter",
-    "firstPage": "firstPage",
-    "court":     "court",
-    "year":      "year",
+CL_COURT_MAP = {
+    "scotus": None,
+    "ca1":    "1st Cir.",
+    "ca2":    "2d Cir.",
+    "ca3":    "3d Cir.",
+    "ca4":    "4th Cir.",
+    "ca5":    "5th Cir.",
+    "ca6":    "6th Cir.",
+    "ca7":    "7th Cir.",
+    "ca8":    "8th Cir.",
+    "ca9":    "9th Cir.",
+    "ca10":   "10th Cir.",
+    "ca11":   "11th Cir.",
+    "cadc":   "D.C. Cir.",
+    "cafc":   "Fed. Cir.",
+    "dcd":    "D.D.C.",
+    "nysd":   "S.D.N.Y.",
+    "nyed":   "E.D.N.Y.",
+    "nynd":   "N.D.N.Y.",
+    "nywd":   "W.D.N.Y.",
+    "cand":   "N.D. Cal.",
+    "cacd":   "C.D. Cal.",
+    "caed":   "E.D. Cal.",
+    "casd":   "S.D. Cal.",
+    "ilnd":   "N.D. Ill.",
+    "ilsd":   "S.D. Ill.",
+    "txsd":   "S.D. Tex.",
+    "txnd":   "N.D. Tex.",
+    "txed":   "E.D. Tex.",
+    "txwd":   "W.D. Tex.",
+    "mad":    "D. Mass.",
+    "mdd":    "D. Md.",
+    "ctd":    "D. Conn.",
+    "njd":    "D.N.J.",
+    "ded":    "D. Del.",
+    "paed":   "E.D. Pa.",
+    "pawd":   "W.D. Pa.",
+    "gamd":   "M.D. Ga.",
+    "gand":   "N.D. Ga.",
+    "gasd":   "S.D. Ga.",
+    "vaed":   "E.D. Va.",
+    "vawd":   "W.D. Va.",
+    "ohnd":   "N.D. Ohio",
+    "ohsd":   "S.D. Ohio",
+    "mied":   "E.D. Mich.",
+    "miwd":   "W.D. Mich.",
+    "mnd":    "D. Minn.",
+    "ord":    "D. Or.",
+    "wawd":   "W.D. Wash.",
+    "waed":   "E.D. Wash.",
+    "cod":    "D. Colo.",
+    "azd":    "D. Ariz.",
+    "nvd":    "D. Nev.",
+    "utd":    "D. Utah",
+    "flnd":   "N.D. Fla.",
+    "flmd":   "M.D. Fla.",
+    "flsd":   "S.D. Fla.",
+    "moed":   "E.D. Mo.",
+    "mowd":   "W.D. Mo.",
 }
 
+# Fields we track for auto-fill detection
+TRACKED_FIELDS = ("volume", "reporter", "firstPage", "court", "year")
 
-async def enrich_parsed(parsed: ParseResponse) -> ParseResponse:
+
+# ── Mark auto-filled fields ───────────────────────────────────────────────────
+
+def mark_auto_filled(parsed: ParseResponse, raw_input: str) -> ParseResponse:
     """
-    Takes a ParseResponse that may have missing fields.
-    Attempts to fill them — first via CourtListener, then LLM fallback.
-
-    Fields filled by LLM are added to ``needsConfirmation`` so the UI can
-    mark them as unverified and require explicit user approval before
-    generating a final citation.
+    Compare the raw user input against extracted fields.
+    Any field whose value doesn't appear in the raw input was auto-filled
+    by the LLM from its own knowledge — mark it in autoFilled.
+    Called in parser.py right after parsing.
     """
-    missing = [f for f in (parsed.missingFields or []) if f != "docket"]
-    if not missing:
-        return parsed
+    raw_lower = raw_input.lower()
+    auto: list[str] = []
 
-    cl_data = await _fetch_from_courtlistener(parsed.caseName or "", parsed)
-
-    still_missing = [f for f in missing if f not in cl_data or not cl_data[f]]
-    llm_data = await _enrich_via_llm(parsed, still_missing) if still_missing else {}
-
-    # CourtListener values take priority over LLM guesses
-    merged = {**llm_data, **cl_data}
+    for field in TRACKED_FIELDS:
+        val = getattr(parsed, field)
+        if val and str(val).lower() not in raw_lower:
+            auto.append(field)
 
     updated = parsed.model_dump()
-    llm_filled: list[str] = []
+    updated["autoFilled"] = sorted(auto)
+    return ParseResponse(**updated)
 
-    for field in missing:
-        key = ENRICHABLE_FIELDS.get(field)
-        if key and merged.get(field):
-            updated[key] = merged[field]
-            # Track provenance: LLM-filled fields are unverified
-            if field not in cl_data or not cl_data.get(field):
-                llm_filled.append(field)
 
-    updated["missingFields"] = [
-        f for f in missing if not merged.get(f)
-    ]
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
-    # Any field the LLM supplied (rather than CourtListener) requires
-    # explicit user confirmation before we trust it.
-    existing_confirms = set(parsed.needsConfirmation or [])
-    updated["needsConfirmation"] = sorted(
-        existing_confirms | set(llm_filled)
-    )
+def _parse_cl_citation(citation_str: str) -> dict:
+    """'347 U.S. 483' → {volume, reporter, firstPage}"""
+    m = re.match(r"^(\d+)\s+(.+?)\s+(\d+)$", citation_str.strip())
+    if not m:
+        return {}
+    return {
+        "volume":    m.group(1),
+        "reporter":  m.group(2),
+        "firstPage": m.group(3),
+    }
 
+
+# ── CourtListener fetch ───────────────────────────────────────────────────────
+
+async def _fetch_from_courtlistener(case_name: str, volume: str) -> dict | None:
+    query   = f"{case_name} {volume}"
+    headers = {"Authorization": f"Token {settings.courtlistener_api_key}"}
+    params  = {"q": query, "type": "o", "page_size": 3}
+
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            resp = await client.get(CL_SEARCH, params=params, headers=headers)
+        if resp.status_code != 200:
+            return None
+        results = resp.json().get("results", [])
+        if not results:
+            return None
+        return max(results, key=lambda r: r.get("score", 0))
+    except Exception:
+        return None
+
+
+# ── Sanity check ─────────────────────────────────────────────────────────────
+
+def _is_same_case(cl: dict, llm_volume: str) -> bool:
+    cl_citations = cl.get("citation", [])
+    if not cl_citations:
+        return False
+    cl_parsed = _parse_cl_citation(cl_citations[0])
+    cl_volume = cl_parsed.get("volume", "").strip()
+    return cl_volume == str(llm_volume).strip()
+
+
+# ── Main cross-validation entry point ────────────────────────────────────────
+
+async def cross_validate(parsed: ParseResponse) -> ParseResponse:
+    """
+    Search CL with caseName + volume, sanity-check, then overwrite
+    reporter / firstPage / court / year with CL values.
+    autoFilled is preserved — CL verifying a field doesn't hide the badge.
+    needsConfirmation is cleared for CL-verified fields since they're now trusted.
+    """
+    if not parsed.caseName or not parsed.volume:
+        return parsed
+
+    cl = await _fetch_from_courtlistener(parsed.caseName, parsed.volume)
+    if not cl:
+        return parsed
+
+    if not _is_same_case(cl, parsed.volume):
+        return parsed  # wrong case — trust LLM entirely
+
+    needs_conf = set(parsed.needsConfirmation or [])
+    updated    = parsed.model_dump()
+
+    # ── Reporter + firstPage ──────────────────────────────────────────────────
+    cl_citations = cl.get("citation", [])
+    if cl_citations:
+        cl_parsed = _parse_cl_citation(cl_citations[0])
+        for field in ("reporter", "firstPage"):
+            cl_val = cl_parsed.get(field)
+            if cl_val:
+                updated[field] = cl_val
+                needs_conf.discard(field)  # CL verified it — trusted
+
+    # ── Court ─────────────────────────────────────────────────────────────────
+    cl_court_id = cl.get("court", "")
+    if cl_court_id in CL_COURT_MAP:
+        updated["court"] = CL_COURT_MAP[cl_court_id]
+        needs_conf.discard("court")
+
+    # ── Year ──────────────────────────────────────────────────────────────────
+    date_filed = (cl.get("dateFiled") or "")[:4]
+    if date_filed:
+        updated["year"] = date_filed
+        needs_conf.discard("year")
+
+    # autoFilled intentionally NOT cleared — badge always shows for
+    # fields the user didn't provide, even if CL verified them
+    updated["needsConfirmation"] = sorted(needs_conf)
     return ParseResponse(**updated)

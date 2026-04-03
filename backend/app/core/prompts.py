@@ -14,7 +14,6 @@ SOURCE_LABELS = {
 }
 
 
-
 def build_chat_system(intent: str, source_type: str) -> str:
     intent_label = INTENT_LABELS.get(intent,      "create a citation")
     source_label = SOURCE_LABELS.get(source_type, "court case")
@@ -36,7 +35,7 @@ Rules:
 - If there is ANY case name or legal source in the input, fire %%PROCEED%% immediately."""
 
 
-PARSE_SYSTEM = """You are a legal citation parser. Extract raw field values from the user's input and return ONLY valid JSON — no markdown, no extra text.
+PARSE_SYSTEM = """You are a legal citation parser with broad knowledge of U.S. case law. Extract fields from the user's input and return ONLY valid JSON — no markdown, no extra text.
 
 Required shape:
 {
@@ -57,27 +56,47 @@ Required shape:
   "needsConfirmation":       string[]
 }
 
-Field rules — extract VERBATIM from the input, do NOT abbreviate or normalize:
-- caseName: extract the full case name as given (e.g. "University of Washington v. National Railroad Association"). Do NOT apply Table T6 abbreviations — the backend handles that.
-- reporter: extract the reporter exactly as the user wrote it (e.g. "Federal Reporter Third", "F.3d", "US"). Do NOT normalize to Bluebook abbreviations — the backend handles that.
-- court: extract the court exactly as the user wrote it (e.g. "Ninth Circuit", "Southern District of New York"). Do NOT abbreviate — the backend handles that.
-- pincite: extract if present, never put in missingFields
-- fullDate: for unpublished/unreported cases only — the full decision date (e.g. "Dec. 30, 1977", "December 30, 1977"). Null for published cases.
-- dbIdentifier: for electronic database citations — e.g. "2024 WL 47632" (Westlaw) or "2024 LX 18483" (LexisNexis). Null if not present.
-- weightParenthetical: extract if present — e.g. "per curiam", "5-4 decision", "en banc". Extract WITHOUT outer parens. Null if absent.
-- explanatoryParenthetical: extract if present — e.g. "holding that the statute violated due process". Extract WITHOUT outer parens. Null if absent.
-- isUnpublished: true if the case appears to be unreported/unpublished (has docket number but no volume/reporter, or mentions "slip op.", WL/LX identifier, etc.)
+Field rules:
 
-Do NOT include isScotus or jurisdiction — the backend derives these deterministically.
+- caseName: extract the full case name, correcting obvious spelling mistakes
+  (e.g. "brwon vs baord of educ" → "Brown v. Board of Education").
+  Do NOT apply Table T6 abbreviations — the backend handles that.
 
-missingFields rules — STRICT, do not guess:
-- Always required: caseName, year
-- Required for published cases: volume, reporter, firstPage
-- court: required unless the reporter is clearly a SCOTUS reporter (U.S., S. Ct., L. Ed.)
-- For unpublished cases: fullDate is required
-- weightParenthetical and explanatoryParenthetical are NEVER required — never put them in missingFields
-- If a field is not explicitly stated in the input, it is missing
-- Fields guessed or uncertain go in needsConfirmation
+- volume, reporter, firstPage, court, year:
+  Extract verbatim if the user provided them.
+  If the user did NOT provide them, infer them from your knowledge of the case.
+  For well-known cases (Brown v. Board, Miranda v. Arizona, Roe v. Wade, etc.)
+  you know these values — fill them in confidently.
+  Put inferred values in needsConfirmation, NOT missingFields.
+  Only put in missingFields if you genuinely have no idea whatsoever.
+
+- reporter: extract or infer the reporter abbreviation (e.g. "U.S.", "F.3d", "S. Ct.").
+  Do NOT normalize if the user provided it — extract verbatim.
+
+- court: extract or infer the court abbreviation (e.g. "9th Cir.", "S.D.N.Y.").
+  Do NOT abbreviate user-provided values — extract verbatim.
+
+- pincite: extract if present, never put in missingFields.
+
+- fullDate: for unpublished/unreported cases only. Null for published cases.
+
+- dbIdentifier: for Westlaw/LexisNexis citations (e.g. "2024 WL 47632"). Null if absent.
+
+- weightParenthetical: extract if present, WITHOUT outer parens. Null if absent.
+
+- explanatoryParenthetical: extract if present, WITHOUT outer parens. Null if absent.
+
+- isUnpublished: true if unreported (docket but no volume/reporter, or WL/LX identifier).
+
+missingFields rules — STRICT:
+- Only list a field here if you have NO knowledge of its value whatsoever.
+- For well-known cases, volume/reporter/firstPage/court/year should almost never be missing.
+- pincite, weightParenthetical, explanatoryParenthetical are NEVER in missingFields.
+- Inferred fields go in needsConfirmation, not missingFields.
+
+needsConfirmation rules:
+- Any field whose value you inferred (not explicitly given by the user) goes here.
+- Fields the user explicitly provided are NOT in needsConfirmation.
 
 Return ONLY the JSON."""
 

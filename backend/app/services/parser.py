@@ -4,6 +4,7 @@ from app.schemas.citation import ParseRequest, ParseResponse
 from app.utils.rule_lookup import get_general_rules
 from app.utils.missing_fields import check_missing_fields
 from app.utils.normalizer import normalize
+from app.services.lookup import mark_auto_filled
 
 
 async def parse_citation(req: ParseRequest, source_type: str = "case") -> ParseResponse:
@@ -30,5 +31,8 @@ async def parse_citation(req: ParseRequest, source_type: str = "case") -> ParseR
     missing, needs_conf = check_missing_fields(parsed)
     parsed.missingFields = missing
     parsed.needsConfirmation = needs_conf
+
+    # Track which fields the user didn't provide (filled by LLM from memory)
+    parsed = mark_auto_filled(parsed, req.raw_input)
 
     return parsed

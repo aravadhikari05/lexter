@@ -9,7 +9,7 @@ from app.core.prompts import build_chat_system
 from app.core.llm import stream
 from app.services.parser import parse_citation
 from app.services.generator import generate_citation
-from app.services.lookup import enrich_parsed
+from app.services.lookup import cross_validate
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -59,7 +59,9 @@ async def stream_chat(req: ChatRequest):
             yield sse({"type": "step", "id": "read",     "status": "done"})
 
             yield sse({"type": "step", "id": "name",     "status": "running", "label": "Extracting case name"})
-            parse_task = asyncio.create_task(parse_citation(ParseRequest(raw_input=raw_input), source_type=req.source_type))
+            parse_task = asyncio.create_task(
+                parse_citation(ParseRequest(raw_input=raw_input), source_type=req.source_type)
+            )
             await asyncio.sleep(0.25)
             yield sse({"type": "step", "id": "name",     "status": "done"})
 
@@ -76,20 +78,19 @@ async def stream_chat(req: ChatRequest):
                 yield sse({"type": "done"})
                 return
 
-            try:
-                parsed = await enrich_parsed(parsed)
-            except Exception as e:
-                yield sse({"type": "error", "message": str(e)})
-                yield sse({"type": "done"})
-                return
-
             yield sse({"type": "step", "id": "fields", "status": "done"})
+
+            # ── CourtListener cross-validation ────────────────────────────────
+            yield sse({"type": "step", "id": "validate", "status": "running", "label": "Verifying with CourtListener"})
+            try:
+                parsed = await cross_validate(parsed)
+            except Exception:
+                pass  # non-fatal — proceed with LLM values
+            yield sse({"type": "step", "id": "validate", "status": "done"})
+
             await asyncio.sleep(0.10)
 
             # ── Always confirm ────────────────────────────────────────────────
-            # Every value at this point came from the LLM (parser or
-            # enrichment). Always show the confirm bubble so the user
-            # can verify before we generate a final citation.
             yield sse({"type": "confirm", "parsed": parsed.model_dump()})
             yield sse({"type": "done"})
             return
@@ -111,7 +112,7 @@ async def stream_chat(req: ChatRequest):
 # ─── Confirm → Generate ───────────────────────────────────────────────────────
 
 class ConfirmRequest(BaseModel):
-    parsed: ParseResponse
+    parsed:      ParseResponse
     source_type: str = "case"
 
 
@@ -120,7 +121,9 @@ async def confirm_and_generate(req: ConfirmRequest):
     async def event_stream():
         yield sse({"type": "step", "id": "cite", "status": "running", "label": "Building citation"})
         try:
-            generated = await generate_citation(GenerateRequest(parsed=req.parsed), source_type=req.source_type)
+            generated = await generate_citation(
+                GenerateRequest(parsed=req.parsed), source_type=req.source_type
+            )
         except Exception as e:
             yield sse({"type": "error", "message": str(e)})
             yield sse({"type": "done"})

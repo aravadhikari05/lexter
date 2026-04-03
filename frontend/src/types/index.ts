@@ -1,4 +1,5 @@
 export interface ParseResponse {
+  autoFilled?:               string[]
   caseName?:                 string | null
   volume?:                   string | null
   reporter?:                 string | null
@@ -40,7 +41,7 @@ export interface ChatMessage {
   text?:      string
   fileName?:  string
   streaming?: boolean
-  steps?:     TickerStep[]     // type === 'ticker'
-  parsed?:    ParseResponse    // type === 'confirm'
-  citation?:  CitationResult   // type === 'citation'
+  steps?:     TickerStep[]
+  parsed?:    ParseResponse
+  citation?:  CitationResult
 }

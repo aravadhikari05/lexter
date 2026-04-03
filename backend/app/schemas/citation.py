@@ -15,23 +15,24 @@ class ParseRequest(BaseModel):
     raw_input: str
 
 class ParseResponse(BaseModel):
-    caseName:          CoercedStr  = None
-    volume:            CoercedStr  = None
-    reporter:          CoercedStr  = None
-    firstPage:         CoercedStr  = None
-    pincite:           CoercedStr  = None
-    court:             CoercedStr  = None
-    year:              CoercedStr  = None
-    fullDate:                Optional[str]  = None  # e.g. "Dec. 30, 1977" — required for unpublished (Rule 10.5(b))
+    caseName:                CoercedStr     = None
+    volume:                  CoercedStr     = None
+    reporter:                CoercedStr     = None
+    firstPage:               CoercedStr     = None
+    pincite:                 CoercedStr     = None
+    court:                   CoercedStr     = None
+    year:                    CoercedStr     = None
+    fullDate:                Optional[str]  = None
     docket:                  Optional[str]  = None
-    dbIdentifier:            Optional[str]  = None  # e.g. "2024 WL 47632" or "2024 LX 18483" — electronic DB (B10.1.4(i))
-    weightParenthetical:     Optional[str]  = None  # e.g. "per curiam", "5-4 decision", "Stevens, J., dissenting"
-    explanatoryParenthetical:Optional[str]  = None  # e.g. "holding that the statute was unconstitutional"
+    dbIdentifier:            Optional[str]  = None
+    weightParenthetical:     Optional[str]  = None
+    explanatoryParenthetical:Optional[str]  = None
     isScotus:                bool           = False
-    isUnpublished:     bool           = False
-    jurisdiction:      str            = "Unknown"
-    missingFields:     list[str]      = []
-    needsConfirmation: list[str]      = []
+    isUnpublished:           bool           = False
+    jurisdiction:            str            = "Unknown"
+    missingFields:           list[str]      = []
+    needsConfirmation:       list[str]      = []
+    autoFilled:              list[str]      = []  # fields not given by user, filled by LLM or CL
 
 
 class GenerateRequest(BaseModel):
@@ -40,8 +41,8 @@ class GenerateRequest(BaseModel):
     pincite: str = ""
 
 class GenerateResponse(BaseModel):
-    academicFull: str
-    shortForm:    str
-    fullCitation: str
-    rulesUsed:    list[str] = []
+    academicFull:       str
+    shortForm:          str
+    fullCitation:       str
+    rulesUsed:          list[str] = []
     validationWarnings: list[str] = []

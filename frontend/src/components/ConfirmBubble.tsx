@@ -8,7 +8,9 @@ interface Props {
   working:   boolean
 }
 
-const FIELD_LABELS: Record<string, string> = {
+type ParseField = keyof ParseResponse
+
+const FIELD_LABELS: Partial<Record<ParseField, string>> = {
   caseName:                 'Case Name',
   volume:                   'Volume',
   reporter:                 'Reporter',
@@ -20,7 +22,7 @@ const FIELD_LABELS: Record<string, string> = {
   explanatoryParenthetical: 'Explanatory Parenthetical',
 }
 
-function buildRows(isScotus: boolean): string[][] {
+function buildRows(isScotus: boolean): ParseField[][] {
   return [
     ['caseName'],
     ['volume', 'reporter', 'firstPage'],
@@ -29,43 +31,45 @@ function buildRows(isScotus: boolean): string[][] {
   ]
 }
 
-function Field({ k, parsed, onEdit, placeholder, unverified }: {
-  k: string
-  parsed: ParseResponse
-  onEdit: (field: string, value: string) => void
+function Field({ k, parsed, onEdit, placeholder, autoFilled }: {
+  k:            ParseField
+  parsed:       ParseResponse
+  onEdit:       (field: string, value: string) => void
   placeholder?: string
-  unverified?: boolean
+  autoFilled?:  boolean
 }) {
-  const borderDefault = unverified ? '#c8952c' : 'var(--border-b)'
+  const borderDefault = autoFilled ? '#7a7a5a' : 'var(--border-b)'
+  const val = (parsed as unknown as Record<string, unknown>)[k as string]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1, minWidth: 0 }}>
       <span style={{
         fontSize: 9, letterSpacing: '.1em',
-        color: unverified ? '#c8952c' : 'var(--dimmer)',
+        color: autoFilled ? 'var(--muted)' : 'var(--dimmer)',
         fontFamily: "'DM Mono', monospace", textTransform: 'uppercase',
         display: 'flex', alignItems: 'center', gap: 5,
       }}>
         {FIELD_LABELS[k]}
-        {unverified && (
+        {autoFilled && (
           <span style={{
             fontSize: 8, letterSpacing: '.06em',
-            background: 'rgba(200, 149, 44, 0.15)',
-            color: '#c8952c', borderRadius: 3,
+            background: 'rgba(255,255,255,0.05)',
+            color: 'var(--muted)', borderRadius: 3,
             padding: '1px 5px', fontWeight: 600,
+            border: '1px solid var(--border)',
           }}>
-            AI-SUGGESTED
+            FILLED IN
           </span>
         )}
       </span>
       <input
         type="text"
-        defaultValue={String(parsed[k as keyof ParseResponse] ?? '')}
-        onChange={e => onEdit(k, e.target.value)}
+        defaultValue={String(val ?? '')}
+        onChange={e => onEdit(k as string, e.target.value)}
         placeholder={placeholder || '—'}
         style={{
           width: '100%',
-          background: unverified ? 'rgba(200, 149, 44, 0.06)' : 'var(--bg)',
+          background: 'var(--bg)',
           border: `1px solid ${borderDefault}`,
           borderRadius: 6, padding: '7px 10px', fontFamily: "'DM Mono', monospace",
           fontSize: 12, color: 'var(--text)', outline: 'none',
@@ -80,8 +84,8 @@ function Field({ k, parsed, onEdit, placeholder, unverified }: {
 }
 
 export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Props) {
-  const unverifiedSet = new Set(parsed.needsConfirmation ?? [])
-  const hasUnverified = unverifiedSet.size > 0
+  const autoFilledSet = new Set(parsed.autoFilled ?? [])
+  const hasAutoFilled = autoFilledSet.size > 0
 
   return (
     <div style={{
@@ -100,18 +104,13 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
         <span style={{ fontSize: 9, letterSpacing: '.12em', color: 'var(--accent)', fontFamily: "'DM Mono', monospace" }}>
           CASE FOUND. DOES THIS LOOK RIGHT?
         </span>
-        {hasUnverified && (
+        {hasAutoFilled && (
           <span style={{
             fontSize: 8, letterSpacing: '.08em',
             fontFamily: "'DM Mono', monospace",
-            color: '#c8952c', display: 'flex', alignItems: 'center', gap: 4,
+            color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4,
           }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c8952c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            SOME VALUES ARE AI-SUGGESTED — PLEASE VERIFY
+            some fields were filled in automatically
           </span>
         )}
       </div>
@@ -121,8 +120,8 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
           <div key={i} style={{ display: 'flex', gap: 10 }}>
             {row.map(k => (
               <Field
-                key={k} k={k} parsed={parsed} onEdit={onEdit}
-                unverified={unverifiedSet.has(k)}
+                key={k as string} k={k} parsed={parsed} onEdit={onEdit}
+                autoFilled={autoFilledSet.has(k as string)}
                 placeholder={
                   k === 'pincite' || k === 'weightParenthetical' || k === 'explanatoryParenthetical'
                     ? 'optional'
@@ -147,7 +146,7 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
               transition: 'background .15s',
             }}
           >
-            {working ? 'GENERATING…' : hasUnverified ? 'CONFIRM & GENERATE →' : 'LOOKS GOOD →'}
+            {working ? 'GENERATING…' : 'LOOKS GOOD →'}
           </button>
         </div>
       </div>

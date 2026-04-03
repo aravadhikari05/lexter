@@ -1,10 +1,12 @@
 import json
+import httpx
 from openai import AsyncOpenAI
 from app.core.config import settings
 
 client = AsyncOpenAI(
     api_key=settings.openrouter_api_key,
     base_url="https://openrouter.ai/api/v1",
+    timeout=httpx.Timeout(60, connect=10),
 )
 
 def safe_json(text: str) -> dict:

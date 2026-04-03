@@ -88,6 +88,13 @@ export default function App() {
           try { evt = JSON.parse(payload) } catch { continue }
           if (evt.type === 'done') break
 
+          if (evt.type === 'error') {
+            setMessages(prev => prev.filter(m => m.id !== thinkId).filter(m => m.id !== asstId))
+            addMsg({ role: 'assistant', type: 'text', text: `Something went wrong: ${evt.message || 'unknown error'}` })
+            setBusy(false)
+            return
+          }
+
           if (evt.type === 'step') {
             const { id, status, label } = evt as { id: string; status: string; label?: string }
             setMessages(prev => {
@@ -185,6 +192,15 @@ export default function App() {
           let evt: Record<string, unknown>
           try { evt = JSON.parse(payload) } catch { continue }
           if (evt.type === 'done') break
+
+          if (evt.type === 'error') {
+            setMessages(prev => prev.filter(m => m.id !== tickerId))
+            addMsg({ role: 'assistant', type: 'text', text: `Generation failed: ${evt.message || 'unknown error'}` })
+            setPendingParsed(null)
+            setPendingEdits({})
+            setConfirmWorking(false)
+            return
+          }
 
           if (evt.type === 'step') {
             const { id, status, label } = evt as { id: string; status: string; label?: string }

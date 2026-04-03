@@ -1,18 +1,27 @@
-from typing import Optional
-from pydantic import BaseModel
+from typing import Annotated, Optional
+from pydantic import BaseModel, BeforeValidator
+
+
+def _coerce_str(v: object) -> str | None:
+    if v is None:
+        return None
+    return str(v)
+
+
+CoercedStr = Annotated[Optional[str], BeforeValidator(_coerce_str)]
 
 
 class ParseRequest(BaseModel):
     raw_input: str
 
 class ParseResponse(BaseModel):
-    caseName:          Optional[str]  = None
-    volume:            Optional[str]  = None
-    reporter:          Optional[str]  = None
-    firstPage:         Optional[str]  = None
-    pincite:           Optional[str]  = None
-    court:             Optional[str]  = None
-    year:              Optional[str]  = None
+    caseName:          CoercedStr  = None
+    volume:            CoercedStr  = None
+    reporter:          CoercedStr  = None
+    firstPage:         CoercedStr  = None
+    pincite:           CoercedStr  = None
+    court:             CoercedStr  = None
+    year:              CoercedStr  = None
     fullDate:                Optional[str]  = None  # e.g. "Dec. 30, 1977" — required for unpublished (Rule 10.5(b))
     docket:                  Optional[str]  = None
     dbIdentifier:            Optional[str]  = None  # e.g. "2024 WL 47632" or "2024 LX 18483" — electronic DB (B10.1.4(i))

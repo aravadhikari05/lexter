@@ -32,11 +32,20 @@ async def stream_chat(req: ChatRequest):
 
     async def event_stream():
         # ── Buffer LLM response ───────────────────────────────────────────────
+        yield sse({"type": "step", "id": "thinking", "status": "running", "label": "Thinking"})
+
         full = ""
-        async for chunk in await stream(messages, max_tokens=200):
-            delta = chunk.choices[0].delta.content if chunk.choices else None
-            if delta:
-                full += delta
+        try:
+            async for chunk in await stream(messages, max_tokens=200):
+                delta = chunk.choices[0].delta.content if chunk.choices else None
+                if delta:
+                    full += delta
+        except Exception as e:
+            yield sse({"type": "error", "message": str(e)})
+            yield sse({"type": "done"})
+            return
+
+        yield sse({"type": "step", "id": "thinking", "status": "done"})
 
         if "%%PROCEED::" in full:
             try:
@@ -64,12 +73,14 @@ async def stream_chat(req: ChatRequest):
                 parsed = await parse_task
             except Exception as e:
                 yield sse({"type": "error", "message": str(e)})
+                yield sse({"type": "done"})
                 return
 
             try:
                 parsed = await enrich_parsed(parsed)
             except Exception as e:
                 yield sse({"type": "error", "message": str(e)})
+                yield sse({"type": "done"})
                 return
 
             yield sse({"type": "step", "id": "fields", "status": "done"})

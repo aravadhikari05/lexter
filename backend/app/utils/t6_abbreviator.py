@@ -8,7 +8,7 @@ single-word entries, to avoid partial clobbering.
 import re
 from pathlib import Path
 
-_T6_PATH = Path(__file__).resolve().parents[3] / "Bluebook" / "Whitepages" / "t6_case_names_and_institutional_authors_in_citations.md"
+_T6_PATH = Path(__file__).resolve().parents[2] / "Bluebook" / "Whitepages" / "t6_case_names_and_institutional_authors_in_citations.md"
 
 # ── Build lookup tables at import time ────────────────────────────────────────
 

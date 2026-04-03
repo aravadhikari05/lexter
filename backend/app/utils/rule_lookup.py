@@ -2,7 +2,7 @@
 import re
 from pathlib import Path
 
-BLUEBOOK_DIR = Path(__file__).resolve().parents[3] / "Bluebook"
+BLUEBOOK_DIR = Path(__file__).resolve().parents[2] / "Bluebook"
 BLUEPAGES = BLUEBOOK_DIR / "Bluepages"
 
 # Tier 1 mapping: source_type -> list of overview files

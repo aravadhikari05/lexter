@@ -11,7 +11,7 @@ from pathlib import Path
 from app.schemas.citation import ParseResponse
 from app.utils.t6_abbreviator import t6_abbreviate
 
-_TABLES = Path(__file__).resolve().parents[3] / "Bluebook" / "Whitepages"
+_TABLES = Path(__file__).resolve().parents[2] / "Bluebook" / "Whitepages"
 
 
 # ══════════════════════════════════════════════════════════════════════════════

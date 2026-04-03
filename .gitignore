@@ -42,7 +42,7 @@ htmlcov/
 # =========================
 # Node / React / Vite
 # =========================
-node_modules/
+**/node_modules/
 
 # Vite build output
 dist/
@@ -67,8 +67,10 @@ pnpm-debug.log*
 # =========================
 frontend/.env
 frontend/.env.*
+!frontend/.env.example
 backend/.env
 backend/.env.*
+!backend/.env.example
 
 # =========================
 # Files

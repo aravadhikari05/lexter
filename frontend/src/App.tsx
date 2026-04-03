@@ -1,4 +1,6 @@
+// src/App.tsx
 import { useState, useCallback, useEffect, useRef } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import type { ChatMessage, ParseResponse, CitationResult } from './types'
 import type { IntentId, SourceId } from './components/SourceSelector'
 import Sidebar from './components/Sidebar'
@@ -6,12 +8,15 @@ import InputBox from './components/InputBox'
 import ConfirmBubble from './components/ConfirmBubble'
 import CitationCards from './components/CitationCards'
 import StepTicker from './components/StepTicker'
+import LandingPage from './pages/LandingPage'
+import { supabase } from './lib/supabase'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
-
 const uid = () => Math.random().toString(36).slice(2)
 
 export default function App() {
+  const [session, setSession] = useState<Session | null | undefined>(undefined)
+
   const [messages,     setMessages]     = useState<ChatMessage[]>([])
   const [input,        setInput]        = useState('')
   const [file,         setFile]         = useState<File | null>(null)
@@ -22,17 +27,27 @@ export default function App() {
   const [selectedIntent, setSelectedIntent] = useState<IntentId>('create')
   const [selectedSource, setSelectedSource] = useState<SourceId>('case')
 
-  const [pendingParsed,   setPendingParsed]   = useState<ParseResponse | null>(null)
-  const [pendingEdits,    setPendingEdits]     = useState<Record<string, string>>({})
-  const [confirmWorking,  setConfirmWorking]   = useState(false)
+  const [pendingParsed,  setPendingParsed]  = useState<ParseResponse | null>(null)
+  const [pendingEdits,   setPendingEdits]   = useState<Record<string, string>>({})
+  const [confirmWorking, setConfirmWorking] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
   const fileRef   = useRef<HTMLInputElement>(null)
 
+  // ── Hooks — must all be above any early returns ───────────────────────────
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    return () => subscription.unsubscribe()
+  }, [])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // ── Handlers — also above early returns ───────────────────────────────────
 
   const addMsg = (msg: Omit<ChatMessage, 'id'>) =>
     setMessages(prev => [...prev, { id: uid(), ...msg }])
@@ -47,6 +62,8 @@ export default function App() {
     setFile(f)
     setFileText((await f.text()).slice(0, 4000))
   }
+
+  const handleSignOut = () => supabase.auth.signOut()
 
   // ── Chat stream ────────────────────────────────────────────────────────────
   const runChat = async (userText: string, content: string) => {
@@ -160,7 +177,7 @@ export default function App() {
     if (!pendingParsed) return
     setConfirmWorking(true)
 
-    const merged  = { ...pendingParsed, ...pendingEdits }
+    const merged   = { ...pendingParsed, ...pendingEdits }
     const tickerId = uid()
 
     setMessages(prev => prev.map(m =>
@@ -207,7 +224,7 @@ export default function App() {
             const newStep = { id, label: label ?? id, status: status as 'running' | 'done', icon: '◦' }
             setMessages(prev => prev.map(m => {
               if (m.id !== tickerId) return m
-              const steps = m.steps || []
+              const steps  = m.steps || []
               const exists = steps.find((s: any) => s.id === id)
               return { ...m, steps: exists ? steps.map((s: any) => s.id === id ? { ...s, status } : s) : [...steps, newStep] }
             }))
@@ -231,7 +248,11 @@ export default function App() {
     setConfirmWorking(false)
   }
 
-  // ── Send ───────────────────────────────────────────────────────────────────
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+  }
+
+  // ── useCallback — still above early returns ────────────────────────────────
   const send = useCallback(async (text?: string) => {
     const userText = (text || input).trim()
     if (!userText || busy) return
@@ -244,9 +265,21 @@ export default function App() {
     await runChat(userText, content)
   }, [input, busy, messages, file, fileText, selectedIntent, selectedSource])
 
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+  // ── Early returns — AFTER all hooks ───────────────────────────────────────
+
+  if (session === undefined) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '.12em', color: 'var(--dimmer)' }}>
+          LOADING…
+        </span>
+      </div>
+    )
   }
+
+  if (!session) return <LandingPage />
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   const noMessages = messages.length === 0
   const canSend    = input.trim().length > 0 && !busy
@@ -266,7 +299,7 @@ export default function App() {
 
   const s = {
     shell:    { display: 'flex', flexDirection: 'column' as const, flex: 1, minWidth: 0, height: '100vh' },
-    header:   { flexShrink: 0, padding: '18px 20px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'baseline', gap: 10 },
+    header:   { flexShrink: 0, padding: '18px 20px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     messages: { flex: 1, overflowY: 'auto' as const, padding: '24px 24px 120px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center' },
     msgCol:   { width: '100%', maxWidth: 780, display: 'flex', flexDirection: 'column' as const, gap: 18 },
     msgRow:   (role: string) => ({ display: 'flex', flexDirection: 'column' as const, gap: 4, alignItems: role === 'user' ? 'flex-end' : 'flex-start', animation: 'msgIn .2s ease both' }),
@@ -295,9 +328,24 @@ export default function App() {
 
       <div style={s.shell}>
         <div style={s.header}>
-          <span style={{ fontFamily: "'Lora', serif", fontSize: 18, fontWeight: 600, fontStyle: 'italic', letterSpacing: '-.01em' }}>
-            <span style={{ color: 'var(--accent)' }}>Lex</span>ter
-          </span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+            <span style={{ fontFamily: "'Lora', serif", fontSize: 18, fontWeight: 600, fontStyle: 'italic', letterSpacing: '-.01em' }}>
+              <span style={{ color: 'var(--accent)' }}>Lex</span>ter
+            </span>
+          </div>
+          <button
+            onClick={handleSignOut}
+            style={{
+              fontFamily: "'DM Mono', monospace", fontSize: 9,
+              letterSpacing: '.1em', color: 'var(--dimmer)',
+              background: 'none', border: 'none', cursor: 'pointer',
+              transition: 'color .15s', padding: '4px 8px',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--muted)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--dimmer)' }}
+          >
+            SIGN OUT
+          </button>
         </div>
 
         <div style={s.messages}>
@@ -346,11 +394,7 @@ export default function App() {
                       working={confirmWorking}
                     />
                   ) : msg.type === 'citation' ? (
-                    <CitationCards
-                      result={msg.citation!}
-                      onEdit={() => {}}
-                      sourceUrl={null}
-                    />
+                    <CitationCards result={msg.citation!} onEdit={() => {}} sourceUrl={null} />
                   ) : (
                     <div style={s.bubble(msg.role)}>
                       {msg.fileName && <div style={{ fontSize: 10, color: 'var(--accent)', marginBottom: 6 }}>{msg.fileName}</div>}

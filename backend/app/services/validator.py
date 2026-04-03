@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass, field
 
 from app.schemas.citation import GenerateResponse
+from datetime import datetime
 
 
 @dataclass
@@ -114,7 +115,8 @@ KNOWN_COURTS: set[str] = {
 }
 
 _MIN_YEAR = 1600
-_MAX_YEAR = 2026
+_MAX_YEAR = datetime.now().year + 1
+
 
 
 # ── HTML-tag balance checker ─────────────────────────────────────────────────

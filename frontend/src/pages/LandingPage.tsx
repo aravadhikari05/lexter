@@ -173,8 +173,6 @@ const S = {
     maxWidth: 460,
   } satisfies React.CSSProperties,
 
-  stats: { display: 'flex', gap: 0 } satisfies React.CSSProperties,
-
   tickerWrap: {
     position: 'relative',
     zIndex: 1,
@@ -480,20 +478,199 @@ function CitationDemo() {
   )
 }
 
+// ─── Email Confirmation Modal ─────────────────────────────────────────────────
+
+interface ConfirmModalProps {
+  email: string
+  resent: boolean
+  onResend: () => void
+  onSignIn: () => void
+  onStartOver: () => void
+}
+
+function ConfirmModal({ email, resent, onResend, onSignIn, onStartOver }: ConfirmModalProps) {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 20)
+    return () => clearTimeout(t)
+  }, [])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      opacity: visible ? 1 : 0,
+      transition: 'opacity .25s ease',
+    }}>
+      {/* Backdrop */}
+      <div
+        onClick={onSignIn}
+        style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(8,7,5,.82)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
+      />
+
+      {/* Card */}
+      <div style={{
+        position: 'relative', zIndex: 1,
+        background: 'var(--surface)',
+        border: '1px solid var(--border-b)',
+        borderRadius: 16,
+        width: 400,
+        boxShadow: '0 0 0 1px rgba(200,168,75,.08), 0 32px 80px rgba(0,0,0,.6)',
+        overflow: 'hidden',
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(16px) scale(.97)',
+        transition: 'transform .3s cubic-bezier(.16,1,.3,1)',
+      }}>
+
+        {/* Top accent bar */}
+        <div style={{
+          height: 2,
+          background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
+          opacity: .7,
+        }} />
+
+        {/* Header bar */}
+        <div style={{
+          background: 'var(--surface2)',
+          borderBottom: '1px solid var(--border)',
+          padding: '10px 16px',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          {['#e05c5c','#d4a017','#4caf50'].map(c => (
+            <div key={c} style={{ width: 7, height: 7, borderRadius: '50%', background: c, opacity: .5 }} />
+          ))}
+          <span style={{ fontFamily: mono, fontSize: 8, letterSpacing: '.16em', color: 'var(--dimmer)', marginLeft: 4 }}>
+            LEXTER · EMAIL CONFIRMATION
+          </span>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '40px 40px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+
+          {/* Icon */}
+          <div style={{
+            width: 52, height: 52, borderRadius: '50%',
+            background: 'var(--accent-bg)',
+            border: '1px solid var(--accent-bdr)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 22, marginBottom: 22,
+            boxShadow: '0 0 20px rgba(200,168,75,.1)',
+          }}>
+            ✉
+          </div>
+
+          {/* Title */}
+          <h2 style={{
+            fontFamily: serif, fontSize: 22, fontWeight: 600, fontStyle: 'italic',
+            color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-.01em',
+          }}>
+            Check your inbox
+          </h2>
+
+          {/* Body copy */}
+          <p style={{
+            fontFamily: mono, fontSize: 10, color: 'var(--dimmer)',
+            letterSpacing: '.04em', lineHeight: 2, margin: 0,
+          }}>
+            We sent a confirmation link to
+          </p>
+          <p style={{
+            fontFamily: mono, fontSize: 11, color: 'var(--accent)',
+            letterSpacing: '.04em', margin: '2px 0 6px', fontWeight: 600,
+          }}>
+            {email}
+          </p>
+          <p style={{
+            fontFamily: mono, fontSize: 10, color: 'var(--dimmer)',
+            letterSpacing: '.04em', lineHeight: 2, margin: '0 0 28px',
+          }}>
+            Click the link to activate your account,<br />then come back here to sign in.
+          </p>
+
+          {/* Divider */}
+          <div style={{ width: '100%', height: 1, background: 'var(--border)', marginBottom: 28 }} />
+
+          {/* CTA */}
+          <button
+            onClick={onSignIn}
+            style={{
+              width: '100%', padding: '13px',
+              fontFamily: mono, fontSize: 10, letterSpacing: '.14em', fontWeight: 600,
+              background: 'var(--accent)', color: '#111009',
+              border: 'none', borderRadius: 10,
+              cursor: 'pointer', transition: 'opacity .15s, transform .1s',
+              textTransform: 'uppercase',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '.88' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
+            onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(.98)' }}
+            onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none' }}
+          >
+            I'VE CONFIRMED — SIGN IN →
+          </button>
+
+          {/* Secondary actions */}
+          <div style={{
+            marginTop: 22, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center',
+          }}>
+            <p style={{ fontFamily: mono, fontSize: 9, letterSpacing: '.05em', color: 'var(--dimmer)', margin: 0 }}>
+              Didn't get it?{' '}
+              <span
+                onClick={onResend}
+                style={{
+                  color: resent ? 'var(--muted)' : 'var(--accent)',
+                  cursor: resent ? 'default' : 'pointer',
+                  textDecoration: resent ? 'none' : 'underline',
+                  transition: 'color .2s',
+                }}
+              >
+                {resent ? '✓ Sent!' : 'Resend email'}
+              </span>
+            </p>
+            <p style={{ fontFamily: mono, fontSize: 9, letterSpacing: '.05em', color: 'var(--dimmer)', margin: 0 }}>
+              Wrong address?{' '}
+              <span
+                onClick={onStartOver}
+                style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Start over
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
-  const [mode,     setMode]     = useState<AuthMode>('signup')
-  const [email,    setEmail]    = useState('')
-  const [password, setPassword] = useState('')
-  const [error,    setError]    = useState<string | null>(null)
-  const [loading,  setLoading]  = useState(false)
-  const [mounted,  setMounted]  = useState(false)
+  const [mode,         setMode]         = useState<AuthMode>('signup')
+  const [email,        setEmail]        = useState('')
+  const [password,     setPassword]     = useState('')
+  const [error,        setError]        = useState<string | null>(null)
+  const [loading,      setLoading]      = useState(false)
+  const [mounted,      setMounted]      = useState(false)
+  const [confirmed,    setConfirmed]    = useState(false)
+  const [pendingEmail, setPendingEmail] = useState('')
+  const [resent,       setResent]       = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60)
     return () => clearTimeout(t)
   }, [])
+
+  const handleResend = async () => {
+    setResent(false)
+    await supabase.auth.resend({ type: 'signup', email: pendingEmail })
+    setResent(true)
+  }
 
   const handleSubmit = async () => {
     setError(null)
@@ -503,18 +680,18 @@ export default function LandingPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setError(error.message)
     } else {
-      // Sign up then immediately sign in — requires email confirmation disabled in Supabase dashboard
       const { error: signUpError } = await supabase.auth.signUp({ email, password })
       if (signUpError) {
         setError(signUpError.message)
         setLoading(false)
         return
       }
-      // Auto sign-in after signup
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) {
-        // Account created but couldn't sign in — likely email confirm still enabled in Supabase
-        setError('Account created! Check your email to confirm, then sign in.')
+        // Email confirmation is enabled — show modal
+        setPendingEmail(email)
+        setResent(false)
+        setConfirmed(true)
       }
     }
 
@@ -522,6 +699,14 @@ export default function LandingPage() {
   }
 
   const switchMode = (m: AuthMode) => { setMode(m); setError(null) }
+
+  const handleModalSignIn = () => { setConfirmed(false); switchMode('login') }
+  const handleModalStartOver = () => {
+    setConfirmed(false)
+    setEmail('')
+    setPassword('')
+    switchMode('signup')
+  }
 
   const tr = (delay: number): React.CSSProperties => ({
     opacity: mounted ? 1 : 0,
@@ -587,7 +772,6 @@ export default function LandingPage() {
 
       {/* ── Right panel — auth ── */}
       <div style={{ ...S.right, opacity: mounted ? 1 : 0, transition: 'opacity .6s .25s ease' }}>
-
         <div style={S.modeSwitcher}>
           {(['signup', 'login'] as AuthMode[]).map(m => (
             <button key={m} onClick={() => switchMode(m)} style={modeButtonStyle(mode === m)}>
@@ -643,6 +827,17 @@ export default function LandingPage() {
           {TRUST_BULLETS.map(t => <span key={t} style={S.trustItem}>{t}</span>)}
         </div>
       </div>
+
+      {/* ── Email confirmation modal ── */}
+      {confirmed && (
+        <ConfirmModal
+          email={pendingEmail}
+          resent={resent}
+          onResend={handleResend}
+          onSignIn={handleModalSignIn}
+          onStartOver={handleModalStartOver}
+        />
+      )}
     </div>
   )
 }

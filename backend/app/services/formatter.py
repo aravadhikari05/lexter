@@ -6,6 +6,25 @@ class FormatterError(Exception):
     """Raised when the deterministic formatter cannot handle a case."""
 
 
+# Reporters that cover multiple courts/states and therefore require an explicit
+# court designation per R10.4. State official reporters (Mass., Conn. App., etc.)
+# are NOT in this set — they unambiguously identify their own jurisdiction.
+_MULTI_COURT_REPORTERS: frozenset[str] = frozenset({
+    # Federal appellate / district / specialty
+    "F.", "F.2d", "F.3d", "F.4th",
+    "F. Supp.", "F. Supp. 2d", "F. Supp. 3d",
+    "F.R.D.", "F. App'x", "B.R.", "Fed. Cl.", "M.J.",
+    # Regional reporters (multi-state)
+    "A.", "A.2d", "A.3d",
+    "N.E.", "N.E.2d", "N.E.3d",
+    "N.W.", "N.W.2d", "N.W.3d",
+    "P.", "P.2d", "P.3d",
+    "S.E.", "S.E.2d",
+    "So.", "So. 2d", "So. 3d",
+    "S.W.", "S.W.2d", "S.W.3d",
+})
+
+
 # ── Government / geographic party names that should not be used in short form ─
 # Per B10.2 and Rule 10.9(a)(i): when the first party is one of these, use the
 # second party instead.
@@ -65,6 +84,21 @@ def _normalize(s: str) -> str:
     return re.sub(r"  +", " ", s).strip()
 
 
+def _italicize_procedural(case_name: str) -> str:
+    """Wrap procedural phrases in <em> for academicFull (R10.2.1(b)).
+
+    In law review format, case names are roman, but 'In re', 'Ex parte',
+    and 'ex rel.' are always italicized regardless of context.
+    """
+    if case_name.startswith("In re "):
+        return "<em>In re</em> " + case_name[6:]
+    if case_name.startswith("Ex parte "):
+        return "<em>Ex parte</em> " + case_name[9:]
+    if " ex rel. " in case_name:
+        return case_name.replace(" ex rel. ", " <em>ex rel.</em> ")
+    return case_name
+
+
 def _build_parentheticals(fields: dict) -> str:
     """Build the parenthetical suffix for fullCitation / academicFull.
 
@@ -120,8 +154,6 @@ def _format_published(
     rules_used: list[str],
 ) -> GenerateResponse:
     _require(fields, "volume", "reporter", "firstPage", "year")
-    if not is_scotus:
-        _require(fields, "court")
 
     volume = fields["volume"].strip()
     reporter = fields["reporter"].strip()
@@ -130,9 +162,15 @@ def _format_published(
     year = fields["year"].strip()
     court = fields.get("court", "").strip()
 
+    # R10.4(b): court designation required only when reporter doesn't unambiguously
+    # identify the jurisdiction. Multi-court reporters (federal, regional) require it;
+    # state official reporters (Mass., Conn. App., etc.) do not.
+    if not is_scotus and reporter in _MULTI_COURT_REPORTERS:
+        _require(fields, "court")
+
     rules_used.extend(["B10.1.2", "B10.1.3"])
 
-    parenthetical = f"({year})" if is_scotus else f"({court} {year})"
+    parenthetical = f"({year})" if (is_scotus or not court) else f"({court} {year})"
     suffix = _build_parentheticals(fields)
     if suffix:
         rules_used.append("Rule 10.6")
@@ -140,7 +178,7 @@ def _format_published(
     cite_core = f"{volume} {reporter} {first_page}, {pincite}" if pincite else f"{volume} {reporter} {first_page}"
 
     academic_full = _normalize(
-        f"{case_name}, "
+        f"{_italicize_procedural(case_name)}, "
         f"{cite_core} {parenthetical}{suffix}."
     )
     full_citation = _normalize(
@@ -196,7 +234,7 @@ def _format_electronic_db(
     star_pin = f", at *{pincite}" if pincite else ""
 
     academic_full = _normalize(
-        f"{case_name}, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
+        f"{_italicize_procedural(case_name)}, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
     )
     full_citation = _normalize(
         f"<em>{case_name}</em>, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
@@ -251,7 +289,7 @@ def _format_unpublished(
     slip_pin = f", slip op. at {pincite}" if pincite else ""
 
     academic_full = _normalize(
-        f"{case_name}, No. {docket}{slip_pin} {parenthetical}{suffix}."
+        f"{_italicize_procedural(case_name)}, No. {docket}{slip_pin} {parenthetical}{suffix}."
     )
     full_citation = _normalize(
         f"<em>{case_name}</em>, No. {docket}{slip_pin} {parenthetical}{suffix}."

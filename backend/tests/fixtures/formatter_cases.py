@@ -236,9 +236,9 @@ PUBLISHED_CASES = [
         "academicFull": "Bates v. Tappan, 99 Mass. 376 (1868).",
         "fullCitation": "<em>Bates v. Tappan</em>, 99 Mass. 376 (1868).",
         "shortForm": "<em>Bates</em>, 99 Mass. at 376.",
-        "xfail_academic": True,
-        "xfail_full": True,
-        "xfail_short": True,
+        "xfail_academic": False,
+        "xfail_full": False,
+        "xfail_short": False,
     },
     {
         # R10.4(b): reporter implies state, keep court level
@@ -284,9 +284,9 @@ PUBLISHED_CASES = [
         "academicFull": "Dubreuil v. Witt, 80 Conn. App. 410 (2003).",
         "fullCitation": "<em>Dubreuil v. Witt</em>, 80 Conn. App. 410 (2003).",
         "shortForm": "<em>Dubreuil</em>, 80 Conn. App. at 410.",
-        "xfail_academic": True,
-        "xfail_full": True,
-        "xfail_short": True,
+        "xfail_academic": False,
+        "xfail_full": False,
+        "xfail_short": False,
     },
     {
         "id": "state_intermediate",
@@ -434,8 +434,8 @@ PINCITE_CASES = [
         "fullCitation": "<em>Newdow v. U.S. Cong.</em>, 328 F.3d 466, 471 n.3 (9th Cir. 2003).",
         "shortForm": "<em>Newdow</em>, 328 F.3d at 471 n.3.",
         "xfail_academic": False,
-        "xfail_full": True,
-        "xfail_short": True,
+        "xfail_full": False,
+        "xfail_short": False,
     },
     {
         # Page range with digit-dropping: 1530-31
@@ -457,8 +457,8 @@ PINCITE_CASES = [
         "fullCitation": "<em>Cooper v. Dupnik</em>, 924 F.2d 1520, 1530-31 (9th Cir. 1991).",
         "shortForm": "<em>Cooper</em>, 924 F.2d at 1530-31.",
         "xfail_academic": False,
-        "xfail_full": True,
-        "xfail_short": True,
+        "xfail_full": False,
+        "xfail_short": False,
     },
     {
         # passim — nonconsecutive pages
@@ -480,8 +480,8 @@ PINCITE_CASES = [
         "fullCitation": "<em>Engel v. Vitale</em>, 370 U.S. 421, passim (1962).",
         "shortForm": "<em>Engel</em>, 370 U.S. at passim.",
         "xfail_academic": False,
-        "xfail_full": True,
-        "xfail_short": True,
+        "xfail_full": False,
+        "xfail_short": False,
     },
 ]
 
@@ -1401,7 +1401,7 @@ CASE_NAME_EDGE_CASES = [
         "fullCitation": "<em>Dombroski ex rel. Estate of Dombroski v. Chi. Park Dist.</em>, 500 F.3d 100 (7th Cir. 2010).",
         # Short form should use relator — not "Dombroski ex rel. Estate of Dombroski"
         "shortForm": "<em>Dombroski</em>, 500 F.3d at 100.",
-        "xfail_academic": True,
+        "xfail_academic": False,
         "xfail_full": False,
         "xfail_short": True,
     },
@@ -1424,7 +1424,7 @@ CASE_NAME_EDGE_CASES = [
         "academicFull": "<em>Ex parte</em> Zeidner, 200 F.2d 400 (5th Cir. 1960).",
         "fullCitation": "<em>Ex parte Zeidner</em>, 200 F.2d 400 (5th Cir. 1960).",
         "shortForm": "<em>Ex parte Zeidner</em>, 200 F.2d at 400.",
-        "xfail_academic": True,
+        "xfail_academic": False,
         "xfail_full": False,
         "xfail_short": False,
     },
@@ -1447,7 +1447,7 @@ CASE_NAME_EDGE_CASES = [
         "academicFull": "<em>In re</em> Fairfax, 300 F.3d 500 (4th Cir. 2005).",
         "fullCitation": "<em>In re Fairfax</em>, 300 F.3d 500 (4th Cir. 2005).",
         "shortForm": "<em>In re Fairfax</em>, 300 F.3d at 500.",
-        "xfail_academic": True,
+        "xfail_academic": False,
         "xfail_full": False,
         "xfail_short": False,
     },
@@ -1592,7 +1592,7 @@ TYPEFACE_CASES = [
         "academicFull": "<em>Ex parte</em> Young, 209 U.S. 123 (1908).",
         "fullCitation": "<em>Ex parte Young</em>, 209 U.S. 123 (1908).",
         "shortForm": "<em>Ex parte Young</em>, 209 U.S. at 123.",
-        "xfail_academic": True,
+        "xfail_academic": False,
         "xfail_full": False,
         "xfail_short": False,
     },

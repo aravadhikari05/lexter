@@ -1,4 +1,3 @@
-// src/components/ConfirmBubble.tsx
 import type { ParseResponse } from '../types'
 
 interface Props {
@@ -46,7 +45,7 @@ function Field({ k, parsed, onEdit, placeholder, autoFilled }: {
       <span style={{
         fontSize: 9, letterSpacing: '.1em',
         color: autoFilled ? 'var(--muted)' : 'var(--dimmer)',
-        fontFamily: "'DM Mono', monospace", textTransform: 'uppercase',
+        fontFamily: "'Inter', sans-serif", textTransform: 'uppercase',
         display: 'flex', alignItems: 'center', gap: 5,
       }}>
         {FIELD_LABELS[k]}
@@ -71,13 +70,14 @@ function Field({ k, parsed, onEdit, placeholder, autoFilled }: {
           width: '100%',
           background: 'var(--bg)',
           border: `1px solid ${borderDefault}`,
-          borderRadius: 6, padding: '7px 10px', fontFamily: "'DM Mono', monospace",
+          borderRadius: 6, padding: '7px 10px',
+          fontFamily: "'Inter', sans-serif",
           fontSize: 12, color: 'var(--text)', outline: 'none',
           caretColor: 'var(--accent)', transition: 'border-color .15s',
           boxSizing: 'border-box',
         }}
         onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent-bdr)' }}
-        onBlur={e => { e.currentTarget.style.borderColor = borderDefault }}
+        onBlur={e =>  { e.currentTarget.style.borderColor = borderDefault }}
       />
     </div>
   )
@@ -101,13 +101,13 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
         padding: '8px 16px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <span style={{ fontSize: 9, letterSpacing: '.12em', color: 'var(--accent)', fontFamily: "'DM Mono', monospace" }}>
+        <span style={{ fontSize: 9, letterSpacing: '.12em', color: 'var(--accent)', fontFamily: "'Inter', sans-serif" }}>
           CASE FOUND. DOES THIS LOOK RIGHT?
         </span>
         {hasAutoFilled && (
           <span style={{
             fontSize: 8, letterSpacing: '.08em',
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "'Inter', sans-serif",
             color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4,
           }}>
             some fields were filled in automatically
@@ -124,8 +124,7 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
                 autoFilled={autoFilledSet.has(k as string)}
                 placeholder={
                   k === 'pincite' || k === 'weightParenthetical' || k === 'explanatoryParenthetical'
-                    ? 'optional'
-                    : '—'
+                    ? 'optional' : '—'
                 }
               />
             ))}
@@ -137,7 +136,7 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
             onClick={onConfirm}
             disabled={working}
             style={{
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'Inter', sans-serif",
               fontSize: 11, letterSpacing: '.08em', fontWeight: 500,
               background: working ? 'var(--surface2)' : 'var(--accent)',
               color: working ? 'var(--faint)' : '#111009',

@@ -40,7 +40,6 @@ export default function App() {
   const [currentConvId, setCurrentConvId] = useState<string | null>(null)
   const [conversations,  setConversations] = useState<ConversationMeta[]>([])
 
-  // Refs so async functions always read the latest values, no stale closure issues
   const sessionRef        = useRef<Session | null>(null)
   const currentConvIdRef  = useRef<string | null>(null)
   const selectedIntentRef = useRef<IntentId>('create')
@@ -51,7 +50,6 @@ export default function App() {
   const inputRef  = useRef<HTMLTextAreaElement>(null)
   const fileRef   = useRef<HTMLInputElement>(null)
 
-  // Keep refs in sync with state
   useEffect(() => { sessionRef.current = session ?? null },         [session])
   useEffect(() => { selectedIntentRef.current = selectedIntent },   [selectedIntent])
   useEffect(() => { selectedSourceRef.current = selectedSource },   [selectedSource])
@@ -74,7 +72,7 @@ export default function App() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // ── Conversation persistence — all wrapped in try/catch, all non-fatal ─────
+  // ── Conversation persistence ───────────────────────────────────────────────
 
   const loadConversations = async () => {
     try {
@@ -83,7 +81,7 @@ export default function App() {
         .select('id, title, updated_at')
         .order('updated_at', { ascending: false })
       if (data) setConversations(data as ConversationMeta[])
-    } catch { /* table may not exist yet — silently ignore */ }
+    } catch { /* silently ignore */ }
   }
 
   const ensureConversation = async (title: string): Promise<string | null> => {
@@ -184,11 +182,11 @@ export default function App() {
   const handleSignOut = () => supabase.auth.signOut()
 
   // ── Chat stream ────────────────────────────────────────────────────────────
+
   const runChat = async (userText: string, content: string, convId: string | null) => {
     const thinkId = uid()
     addMsg({ id: thinkId, role: 'assistant', type: 'thinking' } as ChatMessage)
 
-    // Use ref for messages to get latest value at call time
     const history = messagesRef.current.slice(-10).map(m => ({ role: m.role, content: m.text || '' }))
     history.push({ role: 'user', content })
 
@@ -303,6 +301,7 @@ export default function App() {
   }
 
   // ── Confirm → Generate ─────────────────────────────────────────────────────
+
   const runConfirm = async () => {
     if (!pendingParsed) return
     setConfirmWorking(true)
@@ -386,7 +385,6 @@ export default function App() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
-  // ── Send — plain async, refs handle freshness, no useCallback needed ───────
   const send = async (text?: string) => {
     const userText = (text || input).trim()
     if (!userText || busy) return
@@ -396,7 +394,6 @@ export default function App() {
     addMsg({ role: 'user', type: 'text', text: userText, fileName: file?.name })
     setFile(null); setFileText('')
 
-    // Persistence is best-effort — if DB not set up, chat still works
     const convId = await ensureConversation(userText)
     if (convId) {
       await saveMessage(convId, 'user', 'text', userText)
@@ -411,7 +408,7 @@ export default function App() {
   if (session === undefined) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '.12em', color: 'var(--dimmer)' }}>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, letterSpacing: '.12em', color: 'var(--dimmer)' }}>
           LOADING…
         </span>
       </div>
@@ -446,7 +443,7 @@ export default function App() {
     msgRow:   (role: string) => ({ display: 'flex', flexDirection: 'column' as const, gap: 4, alignItems: role === 'user' ? 'flex-end' : 'flex-start', animation: 'msgIn .2s ease both' }),
     bubble:   (role: string) => ({
       maxWidth: '88%', padding: '12px 16px', borderRadius: 12,
-      fontFamily: "'Lora', serif", fontSize: 14, lineHeight: 1.75, color: 'var(--text)',
+      fontFamily: "'Inter', sans-serif", fontSize: 14, lineHeight: 1.75, color: 'var(--text)',
       ...(role === 'user' ? {
         background: 'var(--accent-bg)', border: '1px solid var(--accent-bdr)', borderBottomRightRadius: 4,
       } : {
@@ -475,14 +472,14 @@ export default function App() {
       <div style={s.shell}>
         <div style={s.header}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <span style={{ fontFamily: "'Lora', serif", fontSize: 18, fontWeight: 600, fontStyle: 'italic', letterSpacing: '-.01em' }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: '-.01em' }}>
               <span style={{ color: 'var(--accent)' }}>Lex</span>ter
             </span>
           </div>
           <button
             onClick={handleSignOut}
             style={{
-              fontFamily: "'DM Mono', monospace", fontSize: 9,
+              fontFamily: "'Inter', sans-serif", fontSize: 9,
               letterSpacing: '.1em', color: 'var(--dimmer)',
               background: 'none', border: 'none', cursor: 'pointer',
               transition: 'color .15s', padding: '4px 8px',
@@ -497,12 +494,9 @@ export default function App() {
         <div style={s.messages}>
           {noMessages ? (
             <div style={{ ...chatInner, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingBottom: 42 }}>
-              <h1 style={{ fontFamily: "'Lora', serif", fontSize: 40, fontWeight: 600, fontStyle: 'italic', color: 'var(--text)', margin: 0, marginBottom: 10, letterSpacing: '-.02em', textAlign: 'center' }}>
+              <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 40, fontWeight: 700, color: 'var(--text)', margin: 0, marginBottom: 30, letterSpacing: '-.02em', textAlign: 'center' }}>
                 What do you need to cite?
               </h1>
-              <p style={{ fontSize: 19, color: 'var(--muted)', lineHeight: 1.65, textAlign: 'center', maxWidth: 500, margin: '0 0 36px', fontFamily: "'Lora', serif" }}>
-                Every source type. Every rule. Bluebook 22nd ed.
-              </p>
               <div style={{ width: '100%', padding: '0 24px', boxSizing: 'border-box' }}>
                 <div style={{ position: 'relative', borderRadius: 22, boxShadow: inputFocused ? '0 0 0 1.5px var(--accent), 0 0 18px 4px color-mix(in srgb, var(--accent) 45%, transparent)' : '0 0 0 0px transparent', transition: 'box-shadow .35s ease' }}>
                   <div style={{ position: 'absolute', inset: -1.5, borderRadius: 22, overflow: 'hidden', zIndex: 0, opacity: inputFocused ? 0 : 1, transition: 'opacity .3s ease', animation: 'glowPulse 3s ease-in-out infinite', pointerEvents: 'none' }}>
@@ -528,7 +522,7 @@ export default function App() {
                           <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', marginRight: 3, animation: `blink 1.2s ease-in-out ${i * 0.2}s infinite` }} />
                         ))}
                       </div>
-                      <span style={{ fontSize: 11, color: 'var(--faint)', fontFamily: "'DM Mono', monospace" }}>thinking…</span>
+                      <span style={{ fontSize: 11, color: 'var(--faint)', fontFamily: "'Inter', sans-serif" }}>thinking…</span>
                     </div>
                   ) : msg.type === 'ticker' ? (
                     <StepTicker steps={msg.steps || []} done={false} />

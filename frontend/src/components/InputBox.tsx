@@ -42,9 +42,9 @@ export default function InputBox({
       />
       {file && (
         <div style={{ marginBottom: 8 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--accent-bg)', border: '1px solid var(--accent-bdr)', borderRadius: 5, padding: '3px 8px', fontSize: 10, color: 'var(--accent)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--accent-bg)', border: '1px solid var(--accent-bdr)', borderRadius: 5, padding: '3px 8px', fontSize: 10, color: 'var(--accent)', fontFamily: "'Inter', sans-serif" }}>
             {file.name}
-            <span onClick={() => { setFile(null); setFileText('') }} style={{ cursor: 'pointer', opacity: .6, marginLeft: 2 }}>{'\u2715'}</span>
+            <span onClick={() => { setFile(null); setFileText('') }} style={{ cursor: 'pointer', opacity: .6, marginLeft: 2 }}>✕</span>
           </span>
         </div>
       )}
@@ -61,7 +61,7 @@ export default function InputBox({
           onBlur={onBlur}
           placeholder={placeholderByIntent[selectedIntent]}
           disabled={busy}
-          style={{ width: '100%', background: 'none', border: 'none', outline: 'none', resize: 'none', fontFamily: "'Lora', serif", fontSize: 15, color: 'var(--text)', caretColor: 'var(--accent)', lineHeight: 1.6, scrollbarWidth: 'none' }}
+          style={{ width: '100%', background: 'none', border: 'none', outline: 'none', resize: 'none', fontFamily: "'Inter', sans-serif", fontSize: 15, color: 'var(--text)', caretColor: 'var(--accent)', lineHeight: 1.6, scrollbarWidth: 'none' }}
         />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <input ref={fileRef} type="file" accept=".txt,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={onFile} />

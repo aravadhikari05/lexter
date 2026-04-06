@@ -407,6 +407,41 @@ InputBox ──── POST /chat/stream ────────> build_chat_sys
 
 ---
 
+## academicFull vs fullCitation: Typeface Difference
+
+These two output fields are **not identical** — they differ in how the case name is typeset, per the Bluebook's distinct rules for law reviews (Whitepages) vs court documents (Bluepages).
+
+| Field | Context | Full citation case name | Short form case name | Rule |
+|---|---|---|---|---|
+| `academicFull` | Law review (Whitepages) | **Plain roman text** — no `<em>` | Italicized `<em>` | Rule 2.1(a) |
+| `fullCitation` | Court document (Bluepages B2) | **Italicized** `<em>` | Italicized `<em>` | B2 |
+
+**Example:**
+
+- `academicFull`: `Brown v. Bd. of Educ., 347 U.S. 483 (1954).` ← no `<em>` on full citation
+- `fullCitation`: `<em>Brown v. Bd. of Educ.</em>, 347 U.S. 483 (1954).` ← `<em>` on full citation
+- `shortForm`: `<em>Brown</em>, 347 U.S. at 483.` ← `<em>` in both contexts
+
+The current `formatter.py` incorrectly applies `<em>` to the case name in `academicFull`. This is a known bug to be fixed as part of the formatter test suite.
+
+---
+
+## Test Coverage: Out-of-Scope Items
+
+The following Bluebook case citation rules are intentionally excluded from the formatter test suite. They cover edge cases too rare or specialized for law student bulk work, or require significant schema changes beyond current scope.
+
+| Rule | Reason excluded |
+|---|---|
+| Slave cases — `(enslaved party)` parenthetical (R10.7.1(d)) | Specialized historical context |
+| Superseded by constitutional amendment (R10.7.1(c)(iii)) | Requires statute citation schema |
+| Fifth Circuit split 1981 transitional period (R10.8.2) | Rare historical edge case |
+| Cases available only via court website URL (B10.1.4(iii)) | URL injection not in current schema |
+| Bankruptcy adversary/nonadversary dual case names (R10.2.1(a)) | Complex schema change required |
+| `supra` / `hereinafter` short forms (R4.2) | Out of formatter scope (document-level context required) |
+| Multiple dispositions identifier — `(Fox I)`, `(Fox II)` (R10.2.1(k)) | Rare; requires document-level state |
+
+---
+
 ## Key Files Reference
 
 | File | Purpose |

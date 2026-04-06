@@ -21,14 +21,11 @@ export default function StepTicker({ steps, done }: Props) {
       maxWidth: '88%',
       boxShadow: '0 1px 4px rgba(0,0,0,.2)',
     }} className="animate-msg-in">
-      {/* Bar */}
       <div style={{
         background: 'var(--surface2)',
         borderBottom: '1px solid var(--border)',
         padding: '7px 14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
+        display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <div style={{ display: 'flex', gap: 3 }}>
           {done ? (
@@ -44,17 +41,17 @@ export default function StepTicker({ steps, done }: Props) {
           )}
         </div>
         <span style={{
+          fontFamily: "'Inter', sans-serif",
           fontSize: 9, letterSpacing: '.12em',
           color: done ? 'var(--green)' : 'var(--faint)',
         }}>
           {done ? 'CITATION BUILT' : 'BUILDING CITATION'}
         </span>
-        <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--dimmer)' }}>
+        <span style={{ marginLeft: 'auto', fontFamily: "'Inter', sans-serif", fontSize: 9, color: 'var(--dimmer)' }}>
           {visible.filter(s => s.status === 'done').length} / {steps.length}
         </span>
       </div>
 
-      {/* Steps */}
       <div style={{ padding: '4px 0' }}>
         {recent.map((step, i) => {
           const isActive = step.status === 'running'
@@ -62,8 +59,7 @@ export default function StepTicker({ steps, done }: Props) {
           return (
             <div key={step.id} className="animate-slide-up" style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '5px 14px', opacity,
-              transition: 'opacity .3s',
+              padding: '5px 14px', opacity, transition: 'opacity .3s',
             }}>
               <div style={{
                 width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
@@ -74,7 +70,7 @@ export default function StepTicker({ steps, done }: Props) {
               }} />
               <span style={{
                 fontSize: 11, letterSpacing: '.05em',
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: "'Inter', sans-serif",
                 color: isActive ? 'var(--accent)' : 'var(--muted)',
               }}>
                 {step.label}

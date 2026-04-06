@@ -54,8 +54,8 @@ const TRUST_BULLETS = [
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const mono  = "'DM Mono', monospace"
-const serif = "'Lora', serif"
+const mono  = "'Inter', sans-serif"
+const serif = "'Inter', sans-serif"
 
 const S = {
   root: {
@@ -96,7 +96,6 @@ const S = {
     fontFamily: serif,
     fontSize: 210,
     fontWeight: 700,
-    fontStyle: 'italic',
     color: 'transparent',
     WebkitTextStroke: '1px rgba(200,168,75,0.055)',
     lineHeight: 1,
@@ -118,7 +117,6 @@ const S = {
     fontFamily: serif,
     fontSize: 21,
     fontWeight: 600,
-    fontStyle: 'italic',
     letterSpacing: '-.01em',
   } satisfies React.CSSProperties,
 
@@ -155,7 +153,6 @@ const S = {
     fontFamily: serif,
     fontSize: 64,
     fontWeight: 600,
-    fontStyle: 'italic',
     color: 'var(--text)',
     margin: '0 0 26px',
     lineHeight: 1.1,
@@ -219,7 +216,6 @@ const S = {
     fontFamily: serif,
     fontSize: 24,
     fontWeight: 600,
-    fontStyle: 'italic',
     color: 'var(--text)',
     margin: '0 0 4px',
     letterSpacing: '-.01em',
@@ -566,7 +562,7 @@ function ConfirmModal({ email, resent, onResend, onSignIn, onStartOver }: Confir
 
           {/* Title */}
           <h2 style={{
-            fontFamily: serif, fontSize: 22, fontWeight: 600, fontStyle: 'italic',
+            fontFamily: serif, fontSize: 22, fontWeight: 600,
             color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-.01em',
           }}>
             Check your inbox
@@ -744,9 +740,9 @@ export default function LandingPage() {
           </div>
 
           <h1 style={{ ...S.headline, ...tr(.15) }}>
-            Bluebook citations.<br />
-            <span style={S.headlineAccent}>Done right.</span>
-          </h1>
+  Bluebook citations.<br />
+  <span style={{ ...S.headlineAccent, fontStyle: 'italic' }}>Done right.</span>
+</h1>
 
           <p style={{ ...S.subtext, ...tr(.2) }}>
             Paste any citation info, and Lexter verifies it against

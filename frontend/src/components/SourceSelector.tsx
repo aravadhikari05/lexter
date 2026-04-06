@@ -1,11 +1,10 @@
-// src/components/SourceSelector.tsx
 export type IntentId = 'create' | 'validate' | 'explain'
 export type SourceId = 'case' | 'statute' | 'regulation' | 'lawreview' | 'book' | 'website'
 
-const INTENTS: { id: IntentId; label: string }[] = [
-  { id: 'create',   label: 'Create Citation'  },
-  { id: 'validate', label: 'Validate Citation' },
-  { id: 'explain',  label: 'Explain Citation'  },
+const INTENTS: { id: IntentId; label: string; active: boolean }[] = [
+  { id: 'create',   label: 'Create Citation',  active: true  },
+  { id: 'validate', label: 'Validate Citation', active: false },
+  { id: 'explain',  label: 'Explain Citation',  active: false },
 ]
 
 const SOURCES: { id: SourceId; label: string; active: boolean }[] = [
@@ -25,25 +24,18 @@ interface Props {
 }
 
 export default function SourceSelector({ intent, source, setIntent, setSource }: Props) {
-  const pill = (
-    active: boolean,
-    onClick: () => void,
-    label: string,
-    disabled = false,
-  ): React.ReactNode => (
+  const pill = (active: boolean, onClick: () => void, label: string, disabled = false): React.ReactNode => (
     <button
       key={label}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       style={{
-        padding: '4px 10px',
-        borderRadius: 20,
+        padding: '4px 10px', borderRadius: 20,
         border: active ? '1px solid var(--accent-bdr)' : '1px solid var(--border-b)',
         background: active ? 'var(--accent-bg)' : 'transparent',
         color: disabled ? 'var(--dimmer)' : active ? 'var(--accent)' : 'var(--muted)',
-        fontFamily: "'DM Mono', monospace",
-        fontSize: 10.5,
-        letterSpacing: '.03em',
+        fontFamily: "'Inter', sans-serif",
+        fontSize: 10.5, letterSpacing: '.03em',
         cursor: disabled ? 'not-allowed' : 'pointer',
         whiteSpace: 'nowrap' as const,
         transition: 'background .12s, color .12s, border-color .12s',
@@ -57,20 +49,13 @@ export default function SourceSelector({ intent, source, setIntent, setSource }:
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 6,
-      paddingBottom: 10, borderBottom: '1px solid var(--border)',
-      marginBottom: 10,
+      paddingBottom: 10, borderBottom: '1px solid var(--border)', marginBottom: 10,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        {INTENTS.map(i => pill(intent === i.id, () => setIntent(i.id), i.label))}
+        {INTENTS.map(i => pill(intent === i.id, () => setIntent(i.id), i.label, !i.active))}
       </div>
-
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        {SOURCES.map(s => pill(
-          source === s.id,
-          () => setSource(s.id),
-          s.label,
-          !s.active,
-        ))}
+        {SOURCES.map(s => pill(source === s.id, () => setSource(s.id), s.label, !s.active))}
       </div>
     </div>
   )

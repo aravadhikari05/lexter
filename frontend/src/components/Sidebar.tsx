@@ -1,16 +1,13 @@
-// src/components/Sidebar.tsx
 import { useState } from 'react'
 import { Plus, ChevronRight, MessageSquare } from 'lucide-react'
 import type { ConversationMeta } from '../App'
 
 interface Props {
-  onNewChat:    () => void
-  onSelectChat: (id: string) => void
+  onNewChat:     () => void
+  onSelectChat:  (id: string) => void
   conversations: ConversationMeta[]
   activeConvId:  string | null
 }
-
-// ── Date grouping ─────────────────────────────────────────────────────────────
 
 const GROUP_LABELS = ['Today', 'Yesterday', 'This Week', 'Earlier'] as const
 type GroupLabel = typeof GROUP_LABELS[number]
@@ -21,25 +18,17 @@ function getGroup(updatedAt: string): GroupLabel {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const yest  = new Date(today); yest.setDate(today.getDate() - 1)
   const week  = new Date(today); week.setDate(today.getDate() - 7)
-
-  if (date >= today)     return 'Today'
-  if (date >= yest)      return 'Yesterday'
-  if (date >= week)      return 'This Week'
+  if (date >= today) return 'Today'
+  if (date >= yest)  return 'Yesterday'
+  if (date >= week)  return 'This Week'
   return 'Earlier'
 }
 
 function groupConversations(convs: ConversationMeta[]): Record<GroupLabel, ConversationMeta[]> {
-  const groups: Record<GroupLabel, ConversationMeta[]> = {
-    'Today':     [],
-    'Yesterday': [],
-    'This Week': [],
-    'Earlier':   [],
-  }
+  const groups: Record<GroupLabel, ConversationMeta[]> = { 'Today': [], 'Yesterday': [], 'This Week': [], 'Earlier': [] }
   for (const c of convs) groups[getGroup(c.updated_at)].push(c)
   return groups
 }
-
-// ── Icons ─────────────────────────────────────────────────────────────────────
 
 const PersonIcon = ({ size = 17 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -48,8 +37,6 @@ const PersonIcon = ({ size = 17 }: { size?: number }) => (
     <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
   </svg>
 )
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function Sidebar({ onNewChat, onSelectChat, conversations, activeConvId }: Props) {
   const [expanded,  setExpanded]  = useState(false)
@@ -91,14 +78,6 @@ export default function Sidebar({ onNewChat, onSelectChat, conversations, active
             transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
           }} />
         </button>
-        <span style={{
-          fontFamily: "'Lora', serif", fontSize: 14, fontWeight: 600,
-          fontStyle: 'italic', color: 'var(--text)', letterSpacing: '-.01em',
-          whiteSpace: 'nowrap',
-          opacity: expanded ? 1 : 0, transition: 'opacity .2s ease', pointerEvents: 'none',
-        }}>
-          {/* logo placeholder */}
-        </span>
       </div>
 
       {/* ── New chat button ── */}
@@ -111,7 +90,7 @@ export default function Sidebar({ onNewChat, onSelectChat, conversations, active
               padding: '9px 12px', borderRadius: 9,
               background: 'var(--surface)', border: '1px solid var(--border-b)',
               color: 'var(--text)', cursor: 'pointer',
-              fontFamily: "'Lora', serif", fontSize: 13,
+              fontFamily: "'Inter', sans-serif", fontSize: 13,
               transition: 'background .15s, border-color .15s', whiteSpace: 'nowrap',
             }}
             onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'var(--surface2)'; b.style.borderColor = 'var(--accent-bdr)' }}
@@ -155,9 +134,8 @@ export default function Sidebar({ onNewChat, onSelectChat, conversations, active
         {conversations.length === 0 ? (
           <div style={{
             padding: '24px 10px', textAlign: 'center',
-            fontFamily: "'DM Mono', monospace", fontSize: 9,
-            letterSpacing: '.08em', color: 'var(--dimmer)',
-            lineHeight: 1.8,
+            fontFamily: "'Inter', sans-serif", fontSize: 9,
+            letterSpacing: '.08em', color: 'var(--dimmer)', lineHeight: 1.8,
           }}>
             No conversations yet.{'\n'}Start by asking a citation.
           </div>
@@ -170,6 +148,7 @@ export default function Sidebar({ onNewChat, onSelectChat, conversations, active
                 <div style={{
                   fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase',
                   color: 'var(--dimmer)', padding: '8px 8px 4px', whiteSpace: 'nowrap',
+                  fontFamily: "'Inter', sans-serif",
                 }}>
                   {group}
                 </div>
@@ -185,11 +164,10 @@ export default function Sidebar({ onNewChat, onSelectChat, conversations, active
                       style={{
                         width: '100%', display: 'flex', alignItems: 'center', gap: 8,
                         padding: '7px 10px', borderRadius: 7,
-                        border:      isActive ? '1px solid var(--accent-bdr)' : '1px solid transparent',
-                        background:  isActive ? 'var(--accent-bg)' : isHovered ? 'var(--surface)' : 'transparent',
+                        border:     isActive ? '1px solid var(--accent-bdr)' : '1px solid transparent',
+                        background: isActive ? 'var(--accent-bg)' : isHovered ? 'var(--surface)' : 'transparent',
                         cursor: 'pointer', textAlign: 'left',
-                        transition: 'background .12s',
-                        whiteSpace: 'nowrap',
+                        transition: 'background .12s', whiteSpace: 'nowrap',
                       }}
                     >
                       <MessageSquare size={13} style={{
@@ -197,7 +175,7 @@ export default function Sidebar({ onNewChat, onSelectChat, conversations, active
                         flexShrink: 0, marginTop: 1,
                       }} />
                       <span style={{
-                        fontFamily: "'Lora', serif", fontSize: 12.5,
+                        fontFamily: "'Inter', sans-serif", fontSize: 12.5,
                         color: isActive ? 'var(--text)' : 'var(--muted)',
                         overflow: 'hidden', textOverflow: 'ellipsis', flex: 1,
                       }}>
@@ -212,7 +190,7 @@ export default function Sidebar({ onNewChat, onSelectChat, conversations, active
         )}
       </div>
 
-      {/* ── Footer / profile ── */}
+      {/* ── Footer ── */}
       <div style={{
         flexShrink: 0, padding: '10px 9px 16px',
         borderTop: '1px solid var(--border)',
@@ -237,14 +215,11 @@ export default function Sidebar({ onNewChat, onSelectChat, conversations, active
             }}>
               <PersonIcon size={16} />
             </div>
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1,
-              opacity: expanded ? 1 : 0, transition: 'opacity .15s ease',
-            }}>
-              <span style={{ fontFamily: "'Lora', serif", fontSize: 12.5, color: 'var(--text)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, color: 'var(--text)', fontWeight: 500, whiteSpace: 'nowrap' }}>
                 My Account
               </span>
-              <span style={{ fontSize: 9.5, color: 'var(--dimmer)', letterSpacing: '.03em', whiteSpace: 'nowrap' }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9.5, color: 'var(--dimmer)', letterSpacing: '.03em', whiteSpace: 'nowrap' }}>
                 Free plan
               </span>
             </div>

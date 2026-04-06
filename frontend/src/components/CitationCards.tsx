@@ -17,8 +17,8 @@ interface Props {
 }
 
 export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
-  const [tab, setTab]       = useState<string>('acad')
-  const [copied, setCopied] = useState<string | null>(null)
+  const [tab, setTab]                   = useState<string>('acad')
+  const [copied, setCopied]             = useState<string | null>(null)
   const [warningsOpen, setWarningsOpen] = useState(false)
 
   const warnings = result.validationWarnings ?? []
@@ -46,7 +46,7 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
         boxShadow: '0 0 0 1px rgba(74,74,50,.1), 0 2px 8px rgba(0,0,0,.3)',
       }}>
 
-        {/* ── Tab switcher ── */}
+        {/* Tab switcher */}
         <div style={{
           background: 'var(--surface2)',
           borderBottom: '1px solid var(--border)',
@@ -57,7 +57,7 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
               key={t.key}
               onClick={() => setTab(t.key)}
               style={{
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: "'Inter', sans-serif",
                 fontSize: 9, letterSpacing: '.1em',
                 padding: '4px 10px', borderRadius: 5, cursor: 'pointer',
                 background: tab === t.key ? 'var(--bg)' : 'none',
@@ -76,14 +76,11 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
               {t.label}
             </button>
           ))}
-
-          {/* Edit button */}
           <button
             onClick={onEdit}
             title="Edit fields"
             style={{
-              marginLeft: 'auto',
-              width: 30, height: 30, borderRadius: 7,
+              marginLeft: 'auto', width: 30, height: 30, borderRadius: 7,
               border: '1px solid var(--border-b)',
               background: 'none', color: 'var(--faint)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -94,14 +91,13 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
           </button>
         </div>
 
-        {/* ── Grid-stacked bodies ── */}
+        {/* Grid-stacked bodies */}
         <div style={{ display: 'grid' }}>
           {TABS.map(t => (
             <div
               key={t.key}
               style={{
-                gridArea: '1/1',
-                padding: '12px 14px',
+                gridArea: '1/1', padding: '12px 14px',
                 display: 'flex', alignItems: 'flex-start', gap: 10,
                 opacity:       t.key === tab ? 1 : 0,
                 pointerEvents: t.key === tab ? 'auto' : 'none',
@@ -111,17 +107,16 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
             >
               <p
                 style={{
-                  fontFamily: "'Lora', serif",
+                  fontFamily: "'Inter', sans-serif",
                   fontSize: 14, lineHeight: 1.85,
-                  color: 'var(--text)', flex: 1, minWidth: 0,
-                  margin: 0,
+                  color: 'var(--text)', flex: 1, minWidth: 0, margin: 0,
                 }}
                 dangerouslySetInnerHTML={{ __html: t.html }}
               />
               <button
                 onClick={() => copy(t.html, t.key)}
                 style={{
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: "'Inter', sans-serif",
                   fontSize: 10, letterSpacing: '.06em',
                   background: copied === t.key ? 'var(--green-bg)' : 'var(--accent-bg)',
                   color:      copied === t.key ? 'var(--green)'    : 'var(--accent)',
@@ -136,24 +131,20 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
           ))}
         </div>
 
-        {/* ── Validation warnings ── */}
+        {/* Validation warnings */}
         {warnings.length > 0 && (
           <div style={{ borderTop: '1px solid var(--border)' }}>
             <button
               onClick={() => setWarningsOpen(o => !o)}
               style={{
                 width: '100%', cursor: 'pointer',
-                background: 'none', border: 'none',
-                padding: '6px 14px',
+                background: 'none', border: 'none', padding: '6px 14px',
                 display: 'flex', alignItems: 'center', gap: 6,
                 color: 'var(--amber, #d4a017)',
               }}
             >
               <AlertTriangle size={11} style={{ flexShrink: 0 }} />
-              <span style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize: 9, letterSpacing: '.08em',
-              }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, letterSpacing: '.08em' }}>
                 {warnings.length} {warnings.length === 1 ? 'WARNING' : 'WARNINGS'}
               </span>
               <ChevronDown
@@ -166,13 +157,10 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
               />
             </button>
             {warningsOpen && (
-              <ul style={{
-                margin: 0, padding: '0 14px 8px 30px',
-                listStyle: 'disc',
-              }}>
+              <ul style={{ margin: 0, padding: '0 14px 8px 30px', listStyle: 'disc' }}>
                 {warnings.map((w, i) => (
                   <li key={i} style={{
-                    fontFamily: "'DM Mono', monospace",
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: 10, lineHeight: 1.7,
                     color: 'var(--amber, #d4a017)',
                   }}>
@@ -184,23 +172,21 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
           </div>
         )}
 
-        {/* ── Footer: rules + optional CourtListener source ── */}
+        {/* Footer */}
         <div style={{
-          borderTop: '1px solid var(--border)',
-          padding: '7px 14px',
+          borderTop: '1px solid var(--border)', padding: '7px 14px',
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
-          <span style={{ fontSize: 9, color: 'var(--dimmer)', letterSpacing: '.08em' }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, color: 'var(--dimmer)', letterSpacing: '.08em' }}>
             RULES USED:
           </span>
-          <span style={{ fontSize: 9, color: 'var(--faint)', letterSpacing: '.06em' }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, color: 'var(--faint)', letterSpacing: '.06em' }}>
             {active.rule}
           </span>
-
           {sourceUrl && (
             <>
               <span style={{ fontSize: 9, color: 'var(--dimmer)' }}>·</span>
-              <span style={{ fontSize: 9, color: 'var(--dimmer)', letterSpacing: '.08em' }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, color: 'var(--dimmer)', letterSpacing: '.08em' }}>
                 SOURCE:
               </span>
               <a
@@ -208,7 +194,7 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: "'Inter', sans-serif",
                   fontSize: 9, letterSpacing: '.06em',
                   color: 'var(--accent)', textDecoration: 'none', opacity: .7,
                   transition: 'opacity .15s',

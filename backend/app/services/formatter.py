@@ -140,7 +140,7 @@ def _format_published(
     cite_core = f"{volume} {reporter} {first_page}, {pincite}" if pincite else f"{volume} {reporter} {first_page}"
 
     academic_full = _normalize(
-        f"<em>{case_name}</em>, "
+        f"{case_name}, "
         f"{cite_core} {parenthetical}{suffix}."
     )
     full_citation = _normalize(
@@ -196,7 +196,7 @@ def _format_electronic_db(
     star_pin = f", at *{pincite}" if pincite else ""
 
     academic_full = _normalize(
-        f"<em>{case_name}</em>, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
+        f"{case_name}, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
     )
     full_citation = _normalize(
         f"<em>{case_name}</em>, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
@@ -251,7 +251,7 @@ def _format_unpublished(
     slip_pin = f", slip op. at {pincite}" if pincite else ""
 
     academic_full = _normalize(
-        f"<em>{case_name}</em>, No. {docket}{slip_pin} {parenthetical}{suffix}."
+        f"{case_name}, No. {docket}{slip_pin} {parenthetical}{suffix}."
     )
     full_citation = _normalize(
         f"<em>{case_name}</em>, No. {docket}{slip_pin} {parenthetical}{suffix}."

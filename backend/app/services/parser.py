@@ -1,14 +1,15 @@
 from app.core.llm import complete, safe_json
 from app.core.prompts import PARSE_SYSTEM
 from app.schemas.citation import ParseRequest, ParseResponse
-from app.utils.rule_lookup import get_general_rules
+from app.utils.rule_lookup import get_parser_rules
 from app.utils.missing_fields import check_missing_fields
 from app.utils.normalizer import normalize
 from app.services.lookup import mark_auto_filled
 
 
-async def parse_citation(req: ParseRequest, source_type: str = "case") -> ParseResponse:
-    rules = get_general_rules(source_type)
+async def parse_citation(req: ParseRequest, source_type: str = "case", tags: list[str] | None = None) -> ParseResponse:
+    tags = tags or ["published"]
+    rules = get_parser_rules(tags)
     system = PARSE_SYSTEM
     if rules:
         system += f"\n\n--- Bluebook Reference ---\n{rules}"

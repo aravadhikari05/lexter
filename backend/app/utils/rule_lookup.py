@@ -4,6 +4,7 @@ from pathlib import Path
 
 BLUEBOOK_DIR = Path(__file__).resolve().parents[2] / "Bluebook"
 BLUEPAGES = BLUEBOOK_DIR / "Bluepages"
+CONDENSED_DIR = BLUEBOOK_DIR / "Condensed"
 
 # Tier 1 mapping: source_type -> list of overview files
 _GENERAL_RULE_FILES: dict[str, list[str]] = {
@@ -60,6 +61,31 @@ def get_general_rules(source_type: str) -> str:
     parts = []
     for fname in files:
         content = _read_file(BLUEPAGES / fname)
+        if content:
+            parts.append(content)
+    return "\n\n".join(parts)
+
+
+BUNDLE_MAP: dict[str, str] = {
+    "published":           "published_case.md",
+    "unpublished":         "unpublished_case.md",
+    "electronic_database": "unpublished_case.md",
+    "scotus":              "published_case.md",
+    "parenthetical":       "parenthetical_case.md",
+    "history":             "history_case.md",
+}
+
+
+def get_parser_rules(tags: list[str]) -> str:
+    """Select and combine condensed rule bundles based on triage tags."""
+    files = ["base_case.md"]
+    for tag in tags:
+        fname = BUNDLE_MAP.get(tag)
+        if fname and fname not in files:
+            files.append(fname)
+    parts = []
+    for fname in files:
+        content = _read_file(CONDENSED_DIR / fname)
         if content:
             parts.append(content)
     return "\n\n".join(parts)

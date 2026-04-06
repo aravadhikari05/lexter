@@ -1,5 +1,6 @@
 """Tests for citation_parser (LLM mocked via conftest fixtures)."""
 import json
+from unittest.mock import patch
 from app.schemas.citation import ParseRequest
 from app.services.parser import parse_citation
 
@@ -52,6 +53,20 @@ class TestParseCitation:
         messages = call_args.args[0] if call_args.args else call_args.kwargs["messages"]
         system_msg = messages[0]["content"]
         assert "Bluebook" in system_msg
+
+    async def test_parser_calls_get_parser_rules_with_tags(self, mock_llm_complete):
+        with patch("app.services.parser.get_parser_rules") as mock_rules:
+            mock_rules.return_value = "some rules"
+            req = ParseRequest(raw_input="Brown v. Board of Education")
+            await parse_citation(req, source_type="case", tags=["published", "scotus"])
+            mock_rules.assert_called_once_with(["published", "scotus"])
+
+    async def test_parser_defaults_to_published(self, mock_llm_complete):
+        with patch("app.services.parser.get_parser_rules") as mock_rules:
+            mock_rules.return_value = "some rules"
+            req = ParseRequest(raw_input="Brown v. Board of Education")
+            await parse_citation(req, source_type="case")
+            mock_rules.assert_called_once_with(["published"])
 
     async def test_t6_abbreviation_applied(self, mock_llm_complete):
         mock_llm_complete.return_value = json.dumps({

@@ -41,7 +41,6 @@ _COMPLETE_PATCH_TARGETS = [
     "app.core.llm.complete",
     "app.services.parser.complete",
     "app.services.generator.complete",
-    "app.services.lookup.complete",
 ]
 
 _STREAM_PATCH_TARGETS = [

@@ -2,8 +2,10 @@
 from app.utils.rule_lookup import (
     get_general_rules,
     get_specific_rules,
+    get_parser_rules,
     _extract_section,
     BLUEPAGES,
+    CONDENSED_DIR,
 )
 
 
@@ -57,3 +59,41 @@ class TestExtractSection:
     def test_nonexistent_file_returns_empty(self):
         result = _extract_section("/nonexistent/path.md", "B10.1.1")
         assert result == ""
+
+
+class TestGetParserRules:
+    def test_published_includes_base_and_published(self):
+        result = get_parser_rules(["published"])
+        assert "T6" in result or "case name" in result.lower()
+        assert "T7" in result or "reporter" in result.lower()
+
+    def test_unpublished_includes_base_and_unpublished(self):
+        result = get_parser_rules(["unpublished"])
+        assert "docket" in result.lower() or "slip op" in result.lower()
+
+    def test_electronic_database_uses_unpublished_bundle(self):
+        result = get_parser_rules(["electronic_database"])
+        assert "docket" in result.lower() or "slip op" in result.lower()
+
+    def test_scotus_includes_published_bundle(self):
+        # "scotus" maps to the same published_case.md — no duplicate should be added
+        result_published_scotus = get_parser_rules(["published", "scotus"])
+        result_published = get_parser_rules(["published"])
+        assert result_published_scotus == result_published
+
+    def test_multiple_tags(self):
+        result = get_parser_rules(["published", "parenthetical", "history"])
+        assert "parenthetical" in result.lower() or "weight" in result.lower()
+        assert "history" in result.lower() or "aff'd" in result.lower()
+
+    def test_empty_tags_returns_base_only(self):
+        result = get_parser_rules([])
+        assert len(result) > 0
+
+    def test_unknown_tag_ignored(self):
+        result_base = get_parser_rules([])
+        result_unknown = get_parser_rules(["nonexistent_tag"])
+        assert result_base == result_unknown
+
+    def test_condensed_dir_exists(self):
+        assert CONDENSED_DIR.exists()

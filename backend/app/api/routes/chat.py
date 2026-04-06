@@ -14,6 +14,18 @@ from app.services.lookup import cross_validate
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
+def parse_triage_output(full: str) -> tuple[str, list[str]]:
+    """Extract raw input and classification tags from triage LLM output."""
+    proceed_block = full.split("%%PROCEED::")[1]
+    raw = proceed_block.split("%%")[0].strip()
+    if "%%TAGS::" in proceed_block:
+        tags_str = proceed_block.split("%%TAGS::")[1].split("%%")[0]
+        tags = [t.strip() for t in tags_str.split(",") if t.strip()]
+    else:
+        tags = []
+    return raw, tags or ["published"]
+
+
 def sse(data: dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
 
@@ -50,9 +62,10 @@ async def stream_chat(req: ChatRequest):
 
         if "%%PROCEED::" in full:
             try:
-                raw_input = full.split("%%PROCEED::")[1].split("%%")[0].strip()
+                raw_input, tags = parse_triage_output(full)
             except Exception:
                 raw_input = req.message
+                tags = ["published"]
 
             # ── Step ticker ───────────────────────────────────────────────────
             yield sse({"type": "step", "id": "read",     "status": "running", "label": "Reading input"})
@@ -61,7 +74,7 @@ async def stream_chat(req: ChatRequest):
 
             yield sse({"type": "step", "id": "name",     "status": "running", "label": "Extracting case name"})
             parse_task = asyncio.create_task(
-                parse_citation(ParseRequest(raw_input=raw_input), source_type=req.source_type)
+                parse_citation(ParseRequest(raw_input=raw_input), source_type=req.source_type, tags=tags)
             )
             await asyncio.sleep(0.25)
             yield sse({"type": "step", "id": "name",     "status": "done"})

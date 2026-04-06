@@ -1,6 +1,7 @@
 """Integration tests for API routes (LLM mocked via conftest fixtures)."""
 import json
 from tests.conftest import make_parse_response, BROWN_PARSED_JSON, BROWN_GENERATED_JSON
+from app.api.routes.chat import parse_triage_output
 
 
 # ── Health ────────────────────────────────────────────────────────────────────
@@ -135,6 +136,44 @@ class TestChatConfirm:
         assert "academicFull" in data
         assert "shortForm" in data
         assert "fullCitation" in data
+
+
+# ── Triage tag parsing ───────────────────────────────────────────────────────
+
+class TestParseTriageOutput:
+    def test_parses_raw_and_tags(self):
+        full = "Citing your case now. %%PROCEED::Brown v. Board%%TAGS::published,scotus%%"
+        raw, tags = parse_triage_output(full)
+        assert raw == "Brown v. Board"
+        assert tags == ["published", "scotus"]
+
+    def test_defaults_to_published_when_no_tags(self):
+        full = "Citing your case now. %%PROCEED::Brown v. Board%%"
+        raw, tags = parse_triage_output(full)
+        assert raw == "Brown v. Board"
+        assert tags == ["published"]
+
+    def test_handles_single_tag(self):
+        full = "Sure! %%PROCEED::Smith v. Jones%%TAGS::unpublished%%"
+        raw, tags = parse_triage_output(full)
+        assert raw == "Smith v. Jones"
+        assert tags == ["unpublished"]
+
+    def test_strips_whitespace_in_tags(self):
+        full = "%%PROCEED::Test v. Case%%TAGS:: published , scotus %%"
+        raw, tags = parse_triage_output(full)
+        assert tags == ["published", "scotus"]
+
+    def test_electronic_database_tag(self):
+        full = "%%PROCEED::Doe v. Smith, 2024 WL 12345%%TAGS::electronic_database%%"
+        raw, tags = parse_triage_output(full)
+        assert raw == "Doe v. Smith, 2024 WL 12345"
+        assert tags == ["electronic_database"]
+
+    def test_multiple_additive_tags(self):
+        full = "%%PROCEED::Cooper v. Dupnik%%TAGS::published,parenthetical,history%%"
+        raw, tags = parse_triage_output(full)
+        assert tags == ["published", "parenthetical", "history"]
 
 
 # ── Helper ────────────────────────────────────────────────────────────────────

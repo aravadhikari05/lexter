@@ -25,14 +25,26 @@ The user wants to **{intent_label}** for a **{source_label}**.
 Your only job is to decide: does this message contain a recognizable legal source (a case name, citation, statute, etc.)?
 
 If YES — respond with one short sentence then the trigger token:
-Citing your {source_label} now. %%PROCEED::<user's raw input verbatim>%%
+Citing your {source_label} now. %%PROCEED::<user's raw input verbatim>%%TAGS::<comma-separated tags>%%
 
 If NO (totally vague, e.g. just "help" or "hi") — respond briefly, warm, 1-2 sentences, nudge them to paste something.
 
 Rules:
 - NEVER ask for volume, reporter, page, court, or year. The backend handles all of that.
 - NEVER use %%PROCEED%% for greetings or off-topic messages.
-- If there is ANY case name or legal source in the input, fire %%PROCEED%% immediately."""
+- If there is ANY case name or legal source in the input, fire %%PROCEED%% immediately.
+
+Tag classification (append after %%PROCEED::<input>%%):
+Available tags: published, unpublished, electronic_database, scotus, parenthetical, history
+- published: case has or likely has a volume/reporter, or is a well-known published case
+- unpublished: slip opinion with docket number but no volume/reporter or database identifier
+- electronic_database: has WL, LEXIS, or Bloomberg identifier (e.g. "2024 WL 47632")
+- scotus: case is from the U.S. Supreme Court
+- parenthetical: input mentions dissent, concurrence, per curiam, en banc, or explanatory context
+- history: input mentions aff'd, rev'd, cert. denied, or similar prior/subsequent history
+- published/unpublished/electronic_database are mutually exclusive (pick one)
+- Default to published if unsure
+Example: %%PROCEED::Miranda v. Arizona%%TAGS::published,scotus%%"""
 
 
 PARSE_SYSTEM = """You are a legal citation parser with broad knowledge of U.S. case law. Extract fields from the user's input and return ONLY valid JSON — no markdown, no extra text.

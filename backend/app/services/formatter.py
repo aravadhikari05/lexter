@@ -107,12 +107,105 @@ def _build_parentheticals(fields: dict) -> str:
     Short form never includes parentheticals per Rule 10.9.
     """
     parts = []
-    for key in ("weightParenthetical", "explanatoryParenthetical"):
+    # R10.6.4 order: (i) weight, (ii) quoting/citing, (iii) explanatory
+    for key in (
+        "weightParenthetical",
+        "weightParenthetical2",
+        "quotingParenthetical",
+        "citingParenthetical",
+        "explanatoryParenthetical",
+    ):
         val = (fields.get(key) or "").strip()
         if val:
-            val = val.strip("()")
+            # Strip outer parens only when the entire value is wrapped in them,
+            # to avoid stripping inner year parens like (1965) in quoting parens.
+            if val.startswith("(") and val.endswith(")"):
+                val = val[1:-1]
             parts.append(f"({val})")
     return (" " + " ".join(parts)) if parts else ""
+
+
+def _build_history(history: list, full_citation: bool) -> str:
+    """Render subsequent/prior history entries per R10.7.
+
+    Returns a string to append after the main citation body (before the period).
+    Each entry dict has:
+        phrase   : T8 phrase (e.g. "aff'd", "overruled by", "aff'g")
+        cite     : citation string (e.g. "367 N.E.2d 661")
+        court    : court abbreviation, may be empty string
+        year     : year string, may be empty string
+        caseName : optional — new case name (overruled by, abrogated by, sub nom.)
+        join     : "and" — connector between parallel dispositions R10.7.1(e)
+    """
+    parts = []
+    pending_join: str | None = None
+
+    for entry in history:
+        if "join" in entry:
+            pending_join = entry["join"]
+            continue
+
+        phrase = entry.get("phrase", "").strip()
+        cite = entry.get("cite", "").strip()
+        court = entry.get("court", "").strip()
+        year = entry.get("year", "").strip()
+        case_name = entry.get("caseName", "").strip()
+
+        # Build parenthetical for this history entry's cite
+        if court and year:
+            paren = f"({court} {year})"
+        elif court:
+            paren = f"({court})"
+        elif year:
+            paren = f"({year})"
+        else:
+            paren = ""
+        cite_str = f"{cite} {paren}" if paren else cite
+
+        if pending_join:
+            # R10.7.1(e): parallel dispositions joined with italicized "and"
+            jw = pending_join
+            if full_citation and case_name:
+                part = f", <em>{jw}</em> <em>{case_name}</em>, {cite_str}"
+            elif case_name:
+                part = f", <em>{jw}</em> {case_name}, {cite_str}"
+            else:
+                part = f", <em>{jw}</em> {cite_str}"
+            pending_join = None
+
+        elif "sub nom." in phrase and case_name:
+            # R10.7.2: name change — comma after phrase; caseName always in <em>
+            part = f", <em>{phrase}</em>, <em>{case_name}</em>, {cite_str}"
+
+        elif phrase in ("overruled by", "abrogated by") and case_name:
+            # R10.7.1(c): caseName is the direct object, no comma between phrase and name.
+            # Academic: caseName plain; fullCitation: caseName in <em>.
+            if full_citation:
+                part = f", <em>{phrase}</em> <em>{case_name}</em>, {cite_str}"
+            else:
+                part = f", <em>{phrase}</em> {case_name}, {cite_str}"
+
+        elif phrase.endswith("'g"):
+            # Prior history phrase (aff'g, rev'g) — no comma after phrase per R10.7.1(a)
+            if full_citation and case_name:
+                part = f", <em>{phrase}</em> <em>{case_name}</em>, {cite_str}"
+            elif case_name:
+                part = f", <em>{phrase}</em> {case_name}, {cite_str}"
+            else:
+                part = f", <em>{phrase}</em> {cite_str}"
+
+        else:
+            # Standard subsequent history — comma after phrase
+            if full_citation and case_name:
+                part = f", <em>{phrase}</em> <em>{case_name}</em>, {cite_str}"
+            elif case_name:
+                part = f", <em>{phrase}</em> {case_name}, {cite_str}"
+            else:
+                part = f", <em>{phrase}</em>, {cite_str}"
+
+        parts.append(part)
+
+    return "".join(parts)
 
 
 def _require(fields: dict, *keys: str) -> None:
@@ -153,14 +246,21 @@ def _format_published(
     is_scotus: bool,
     rules_used: list[str],
 ) -> GenerateResponse:
-    _require(fields, "volume", "reporter", "firstPage", "year")
+    _require(fields, "volume", "reporter", "firstPage")
 
     volume = fields["volume"].strip()
     reporter = fields["reporter"].strip()
     first_page = fields["firstPage"].strip()
     pincite = (fields.get("pincite") or "").strip()
-    year = fields["year"].strip()
-    court = fields.get("court", "").strip()
+    year = (fields.get("year") or "").strip()
+    court = (fields.get("court") or "").strip()
+    history = fields.get("history") or []
+
+    # Year is required unless the same-year omission rule applies (R10.7.1(a)):
+    # when a subsequent disposition occurs in the same year, the primary year is omitted.
+    # Signal this by providing a non-empty history list with year="" on the primary.
+    if not year and not history:
+        raise FormatterError("Missing required field: year")
 
     # R10.4(b): court designation required only when reporter doesn't unambiguously
     # identify the jurisdiction. Multi-court reporters (federal, regional) require it;
@@ -170,20 +270,30 @@ def _format_published(
 
     rules_used.extend(["B10.1.2", "B10.1.3"])
 
-    parenthetical = f"({year})" if (is_scotus or not court) else f"({court} {year})"
+    # Build court/year parenthetical, omitting year when intentionally empty (R10.7.1(a))
+    if is_scotus or not court:
+        parenthetical = f"({year})" if year else ""
+    else:
+        parenthetical = f"({court} {year})" if year else f"({court})"
+
     suffix = _build_parentheticals(fields)
     if suffix:
         rules_used.append("Rule 10.6")
+    if history:
+        rules_used.append("Rule 10.7")
 
     cite_core = f"{volume} {reporter} {first_page}, {pincite}" if pincite else f"{volume} {reporter} {first_page}"
 
+    history_academic = _build_history(history, full_citation=False)
+    history_full = _build_history(history, full_citation=True)
+
     academic_full = _normalize(
         f"{_italicize_procedural(case_name)}, "
-        f"{cite_core} {parenthetical}{suffix}."
+        f"{cite_core} {parenthetical}{suffix}{history_academic}."
     )
     full_citation = _normalize(
         f"<em>{case_name}</em>, "
-        f"{cite_core} {parenthetical}{suffix}."
+        f"{cite_core} {parenthetical}{suffix}{history_full}."
     )
     # Rule 10.9: short form uses pincite when present, otherwise firstPage
     at_page = pincite or first_page

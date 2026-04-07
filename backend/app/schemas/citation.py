@@ -26,7 +26,11 @@ class ParseResponse(BaseModel):
     docket:                  Optional[str]  = None
     dbIdentifier:            Optional[str]  = None
     weightParenthetical:     Optional[str]  = None
+    weightParenthetical2:    Optional[str]  = None
+    quotingParenthetical:    Optional[str]  = None
+    citingParenthetical:     Optional[str]  = None
     explanatoryParenthetical:Optional[str]  = None
+    history:                 list[dict]     = []
     isScotus:                bool           = False
     isUnpublished:           bool           = False
     jurisdiction:            str            = "Unknown"

@@ -16,7 +16,9 @@ Run: `cd backend && pytest tests/test_deterministic_formatter.py -v`
 | 2026-04-06 (typeface fix) | 142 | 72 | 0 |
 | 2026-04-06 (procedural phrases) | 146 | 68 | 0 |
 | 2026-04-06 (pincite variants) | 152 | 62 | 0 |
-| 2026-04-06 (state reporter-implies) | **158** | **56** | **0** |
+| 2026-04-06 (state reporter-implies) | 158 | 56 | 0 |
+| 2026-04-06 (parenthetical extensions) | 168 | 46 | 0 |
+| 2026-04-06 (subsequent history) | **199** | **15** | **0** |
 
 ---
 
@@ -46,24 +48,20 @@ The formatter already handled these correctly — the xfail flags in the fixture
 
 ---
 
-### Parenthetical Extensions — 8 academic + 5 full xfails
-Schema gaps — formatter ignores unknown fields:
-- `weight_multiple` (academic + full) — schema only supports one `weightParenthetical`
-- `quoting_parenthetical` (academic + full) — no `quotingParenthetical` schema field
-- `citing_parenthetical` (academic + full) — no `citingParenthetical` schema field
-- `three_layer_order` (academic + full) — needs quoting + weight + explanatory
-- `nested_quoting_in_explanatory` (academic + full) — nested quoting
-
-**Fix:** Add `quotingParenthetical`, `citingParenthetical`, and support for multiple weight parens to schema + formatter.
+### ~~Parenthetical Extensions~~ — FIXED
+Added `quotingParenthetical`, `citingParenthetical`, `weightParenthetical2` to `ParseResponse`. Updated `_build_parentheticals()` to follow R10.6.4 order: weight → quoting/citing → explanatory. Also fixed `strip("()")` bug that was stripping inner year parens from quoting/citing values. 10 tests flipped.
 
 ---
 
-### Subsequent History — 30 xfails (14 academic + 14 full + 2 short)
-All 14 history tests require a `history` list field not yet in the schema. The formatter has no history support.
-- `history_affd`, `history_affd_mem`, `history_revd`, `history_revd_other_grounds`, `history_rev_en_banc`, `history_vacated`, `history_cert_denied`, `history_overruled_by`, `history_abrogated_by`, `history_sub_nom`, `history_same_year`, `history_multiple_and`, `history_after_explanatory`, `history_chain`
-- Also: `typeface_history_phrase_italic` (academic + full)
+### ~~Subsequent History~~ — FIXED
+Added `history: list[dict] = []` to `ParseResponse`. Added `_build_history(history, full_citation)` to `formatter.py`. Updated `_format_published` to allow empty `year` when `history` is non-empty (R10.7.1(a) same-year omission). 31 tests flipped (14 academic + 14 full + 1 short for same-year + 2 for typeface_history_phrase_italic).
 
-**Fix:** Add `history: list[dict]` to `ParseResponse`. Implement history rendering in formatter (append `, <em>phrase</em>, cite (court year)` after main citation).
+Key rendering rules implemented:
+- Standard subsequent history (`aff'd`, `rev'd`, `vacated`, etc.): `, <em>phrase</em>, cite (court year)` — comma after phrase
+- Prior history (`aff'g`): `, <em>phrase</em> cite (court year)` — no comma after phrase (R10.7.1(a))
+- `overruled by` / `abrogated by` + caseName: `, <em>phrase</em> caseName, cite` (academic plain, full `<em>caseName</em>`)
+- `sub nom.` + caseName: `, <em>phrase</em>, <em>caseName</em>, cite` (both contexts)
+- `join: "and"` connector: `, <em>and</em> caseName, cite`
 
 ---
 

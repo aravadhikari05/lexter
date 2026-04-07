@@ -18,7 +18,10 @@ Run: `cd backend && pytest tests/test_deterministic_formatter.py -v`
 | 2026-04-06 (pincite variants) | 152 | 62 | 0 |
 | 2026-04-06 (state reporter-implies) | 158 | 56 | 0 |
 | 2026-04-06 (parenthetical extensions) | 168 | 46 | 0 |
-| 2026-04-06 (subsequent history) | **199** | **15** | **0** |
+| 2026-04-06 (subsequent history) | 199 | 15 | 0 |
+| 2026-04-07 (electronic DB edge cases) | 205 | 9 | 0 |
+| 2026-04-07 (short form party selection) | 208 | 6 | 0 |
+| 2026-04-07 (parallel citation + popular name) | **213** | **1** | **0** |
 
 ---
 
@@ -65,27 +68,36 @@ Key rendering rules implemented:
 
 ---
 
-### Electronic DB Edge Cases — 6 xfails (academic + full + short each)
-- `elec_db_multiple_star_pages` — pincite `"*1, *3"` rendered as `at **1, *3` (double asterisk)
-- `elec_db_multiple_dockets` — formatter prepends `No.` to a value already starting with `Nos.`
+### ~~Electronic DB Edge Cases~~ — FIXED
+- `elec_db_multiple_star_pages` — pincite already starts with `*`; now detected and `*` not prepended again
+- `elec_db_multiple_dockets` — docket already starts with `Nos.`; now detected via `re.match(r"Nos?\.", docket)` to skip the `No.` prefix
 
-**Fix:** Detect `*` prefix in pincite for star pages; detect `Nos.` prefix in docket to skip the `No.` prepend.
-
----
-
-### Short Form Party Selection — 3 short xfails
-- `short_reno_rule` — `Reno` is a government official surname not in `_GOV_TERMS`; should use `Bossier Parish Sch. Bd.`
-- `short_ex_rel_use_relator` — `NAACP v. Alabama ex rel. Patterson` should use `Patterson`, not `NAACP`
-- `short_long_party_name_truncated` — `Youngstown Sheet & Tube Co.` should shorten to `Youngstown`
-
-**Fix:** Extend `_GOV_TERMS` or add logic for government officials; parse `ex rel.` to extract relator; allow unambiguous shortening of long party names.
+6 tests flipped (academic + full + short for each case).
 
 ---
 
-### Other — 3 xfails
-- `parallel_citation` (academic + full + short) — dual reporter not supported
-- `case_name_popular_name` (academic + full) — `popularName` schema gap
-- `case_name_ex_rel` short — short form should use relator name
+### ~~Short Form Party Selection~~ — FIXED (3 of 4)
+Added `_GOV_OFFICIAL_SURNAMES` frozenset to `_pick_short_party`. Updated the function with ordered rules:
+- `ex rel.` in **second** party → use relator (after `ex rel.`) — fixes `short_ex_rel_use_relator` and `case_name_ex_rel` short
+- `ex rel.` in **first** party → strip to name before `ex rel.` — fixes `case_name_ex_rel` short
+- First party in `_GOV_OFFICIAL_SURNAMES` → use second party — fixes `short_reno_rule`
+- 3 tests flipped (`short_reno_rule`, `short_ex_rel_use_relator`, `case_name_ex_rel` short)
+
+`short_long_party_name_truncated` remains xfail: `Youngstown Sheet & Tube Co.` → `Youngstown` is optional per Bluebook ("may shorten"), and `case_name_popular_name` already passes expecting the full `Youngstown Sheet & Tube Co.` — both are valid, the formatter can't choose without an explicit `shortFormParty` override field.
+
+---
+
+### ~~Parallel Citation + Popular Name~~ — FIXED
+- **`parallel_citation`**: Added `parallelVolume`, `parallelReporter`, `parallelFirstPage` to `ParseResponse`. `_format_published` appends `, {par_vol} {par_rep} {par_page}` to `cite_core`; short form ignores parallel (primary reporter only per R10.9). 3 tests flipped.
+- **`case_name_popular_name`**: Added `popularName` to `ParseResponse`. `_format_published` inserts ` (<em>{popularName}</em>)` between case name and `, citation` per R10.2.1(k). 2 tests flipped.
+- **`case_name_ex_rel` short**: Fixed by `ex rel.` logic in `_pick_short_party` (previous step).
+
+---
+
+## Remaining XFails (1)
+
+### `short_long_party_name_truncated` — intentionally deferred
+Both `Youngstown Sheet & Tube Co.` (full) and `Youngstown` (truncated) are valid per Bluebook B10.2 ("may shorten"). The formatter defaults to the full party name — `case_name_popular_name` already passes expecting it. Resolving this requires an explicit `shortFormParty` override field in the schema.
 
 ---
 

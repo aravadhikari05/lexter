@@ -357,9 +357,9 @@ PUBLISHED_CASES = [
         "academicFull": "Pledger v. Halvorson, 324 Ark. 302, 921 S.W.2d 576 (1996).",
         "fullCitation": "<em>Pledger v. Halvorson</em>, 324 Ark. 302, 921 S.W.2d 576 (1996).",
         "shortForm": "<em>Pledger</em>, 324 Ark. at 302.",
-        "xfail_academic": True,
-        "xfail_full": True,
-        "xfail_short": True,
+        "xfail_academic": False,
+        "xfail_full": False,
+        "xfail_short": False,
     },
 ]
 
@@ -1322,9 +1322,9 @@ UNPUBLISHED_ELEC_DB_CASES = [
         "academicFull": "Albrecht v. Stranczek, No. 87 C 9535, 1991 U.S. Dist. LEXIS 5088, at *1, *3 (N.D. Ill. Apr. 15, 1991).",
         "fullCitation": "<em>Albrecht v. Stranczek</em>, No. 87 C 9535, 1991 U.S. Dist. LEXIS 5088, at *1, *3 (N.D. Ill. Apr. 15, 1991).",
         "shortForm": "<em>Albrecht</em>, 1991 U.S. Dist. LEXIS 5088, at *1, *3.",
-        "xfail_academic": True,
-        "xfail_full": True,
-        "xfail_short": True,
+        "xfail_academic": False,
+        "xfail_full": False,
+        "xfail_short": False,
     },
     {
         # Multiple docket numbers — formatter only supports single docket
@@ -1344,9 +1344,9 @@ UNPUBLISHED_ELEC_DB_CASES = [
         "academicFull": "PKFinans Int'l Corp. v. IBJ Schroder Leasing Corp., Nos. 93 Civ. 5375, 96 Civ. 1816 (SAS) (HBP), 1996 WL 525862 (S.D.N.Y. Sept. 17, 1996).",
         "fullCitation": "<em>PKFinans Int'l Corp. v. IBJ Schroder Leasing Corp.</em>, Nos. 93 Civ. 5375, 96 Civ. 1816 (SAS) (HBP), 1996 WL 525862 (S.D.N.Y. Sept. 17, 1996).",
         "shortForm": "<em>PKFinans Int'l Corp.</em>, 1996 WL 525862.",
-        "xfail_academic": True,
-        "xfail_full": True,
-        "xfail_short": True,
+        "xfail_academic": False,
+        "xfail_full": False,
+        "xfail_short": False,
     },
     {
         # Depublished — works via weightParenthetical
@@ -1403,7 +1403,7 @@ CASE_NAME_EDGE_CASES = [
         "shortForm": "<em>Dombroski</em>, 500 F.3d at 100.",
         "xfail_academic": False,
         "xfail_full": False,
-        "xfail_short": True,
+        "xfail_short": False,
     },
     {
         # Ex parte — always italicized even in roman context
@@ -1472,8 +1472,8 @@ CASE_NAME_EDGE_CASES = [
         "academicFull": "Youngstown Sheet & Tube Co. v. Sawyer (<em>Steel Seizure</em>), 343 U.S. 579 (1952).",
         "fullCitation": "<em>Youngstown Sheet & Tube Co. v. Sawyer</em> (<em>Steel Seizure</em>), 343 U.S. 579 (1952).",
         "shortForm": "<em>Youngstown Sheet & Tube Co.</em>, 343 U.S. at 579.",
-        "xfail_academic": True,
-        "xfail_full": True,
+        "xfail_academic": False,
+        "xfail_full": False,
         "xfail_short": False,
     },
     {
@@ -1730,7 +1730,7 @@ SHORT_ONLY_CASES = [
         "academicFull": None,
         "fullCitation": None,
         "shortForm": "<em>Bossier Parish Sch. Bd.</em>, 520 U.S. at 480.",
-        "xfail_short": True,
+        "xfail_short": False,
     },
     {
         "id": "short_in_re",
@@ -1771,7 +1771,7 @@ SHORT_ONLY_CASES = [
         "academicFull": None,
         "fullCitation": None,
         "shortForm": "<em>Patterson</em>, 357 U.S. at 464.",
-        "xfail_short": True,
+        "xfail_short": False,
     },
     {
         # Electronic DB short form uses DB identifier per R10.9(a)(ii)

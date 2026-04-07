@@ -31,6 +31,10 @@ class ParseResponse(BaseModel):
     citingParenthetical:     Optional[str]  = None
     explanatoryParenthetical:Optional[str]  = None
     history:                 list[dict]     = []
+    popularName:             Optional[str]  = None
+    parallelVolume:          Optional[str]  = None
+    parallelReporter:        Optional[str]  = None
+    parallelFirstPage:       Optional[str]  = None
     isScotus:                bool           = False
     isUnpublished:           bool           = False
     jurisdiction:            str            = "Unknown"

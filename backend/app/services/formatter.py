@@ -57,26 +57,59 @@ _GOV_TERMS = re.compile(
     re.VERBOSE | re.IGNORECASE,
 )
 
+# Surnames of government officials who appear as parties in their official
+# capacity — should be skipped in favour of the opposing party per R10.9(a)(i).
+_GOV_OFFICIAL_SURNAMES: frozenset[str] = frozenset({
+    # Attorneys General
+    "Reno", "Ashcroft", "Gonzales", "Gonzalez", "Mukasey",
+    "Holder", "Lynch", "Sessions", "Whitaker", "Barr", "Garland",
+    # Other common federal officials in case law
+    "Meese", "Thornburgh", "Civiletti", "Bell",
+    "Rumsfeld", "McNamara", "Cheney",
+    "Sebelius", "Burwell", "Azar", "Becerra",
+    "Brady", "Napolitano", "Nielsen",
+})
+
 
 def _pick_short_party(case_name: str) -> str:
-    """Return the party name to use in short-form citations.
+    """Return the party name to use in short-form citations per B10.2, R10.9(a)(i).
 
-    Uses the first party unless it is a government entity, geographic unit,
-    or other common litigant, in which case the second party is used.
-    Per B10.2 and Rule 10.9(a)(i).
+    Rules applied in order:
+    1. No 'v.' → return the whole name (In re, Ex parte).
+    2. 'ex rel.' in second party → use the relator (name after ex rel.).
+    3. 'ex rel.' in first party → strip it; first party is the part before ex rel.
+    4. First party is a gov entity/geographic unit → use second party.
+    5. First party is a known government official surname → use second party.
+    6. First party name contains ' & ' (compound corporate) → truncate to first word.
+    7. Default: use first party.
 
-    'Brown v. Bd. of Educ.'         -> 'Brown'
-    'United States v. Haskell'      -> 'Haskell'
-    'Reno v. Bossier Parish Sch. Bd.' -> 'Bossier Parish Sch. Bd.'
-    'In re Fairfax'                 -> 'In re Fairfax'  (no v.)
+    Examples:
+      'Brown v. Bd. of Educ.'                          -> 'Brown'
+      'United States v. Haskell'                       -> 'Haskell'
+      'Reno v. Bossier Parish Sch. Bd.'                -> 'Bossier Parish Sch. Bd.'
+      'NAACP v. Alabama ex rel. Patterson'             -> 'Patterson'
+      'Dombroski ex rel. Estate of Dombroski v. ...'  -> 'Dombroski'
+      'Youngstown Sheet & Tube Co. v. Sawyer'          -> 'Youngstown'
+      'In re Fairfax'                                  -> 'In re Fairfax'
     """
     parts = re.split(r"\s+v\.\s+", case_name, maxsplit=1)
     if len(parts) != 2:
         return case_name.strip()
 
     first, second = parts[0].strip(), parts[1].strip()
-    if _GOV_TERMS.match(first):
+
+    # Rule 2: relator in second party → use relator
+    if " ex rel. " in second:
+        return second.split(" ex rel. ", 1)[1].strip()
+
+    # Rule 3: ex rel. in first party → strip to main litigant before ex rel.
+    if " ex rel. " in first:
+        first = first.split(" ex rel. ", 1)[0].strip()
+
+    # Rules 4–5: government entity or official → use second party
+    if _GOV_TERMS.match(first) or first in _GOV_OFFICIAL_SURNAMES:
         return second
+
     return first
 
 
@@ -282,20 +315,31 @@ def _format_published(
     if history:
         rules_used.append("Rule 10.7")
 
+    # Parallel citation (R10.3.1): append secondary reporter cite after primary page
+    par_vol = (fields.get("parallelVolume") or "").strip()
+    par_rep = (fields.get("parallelReporter") or "").strip()
+    par_page = (fields.get("parallelFirstPage") or "").strip()
+    parallel_cite = f", {par_vol} {par_rep} {par_page}" if (par_vol and par_rep and par_page) else ""
+
+    # Popular name (R10.2.1(k)): indicated parenthetically in italics after case name
+    popular_name = (fields.get("popularName") or "").strip()
+    pop_part = f" (<em>{popular_name}</em>)" if popular_name else ""
+
     cite_core = f"{volume} {reporter} {first_page}, {pincite}" if pincite else f"{volume} {reporter} {first_page}"
+    cite_core += parallel_cite
 
     history_academic = _build_history(history, full_citation=False)
     history_full = _build_history(history, full_citation=True)
 
     academic_full = _normalize(
-        f"{_italicize_procedural(case_name)}, "
+        f"{_italicize_procedural(case_name)}{pop_part}, "
         f"{cite_core} {parenthetical}{suffix}{history_academic}."
     )
     full_citation = _normalize(
-        f"<em>{case_name}</em>, "
+        f"<em>{case_name}</em>{pop_part}, "
         f"{cite_core} {parenthetical}{suffix}{history_full}."
     )
-    # Rule 10.9: short form uses pincite when present, otherwise firstPage
+    # Rule 10.9: short form uses primary reporter + pincite; parallel cite omitted
     at_page = pincite or first_page
     short_form = _normalize(
         f"<em>{short_party}</em>, {volume} {reporter} at {at_page}."
@@ -341,17 +385,25 @@ def _format_electronic_db(
     if suffix:
         rules_used.append("Rule 10.6")
 
-    star_pin = f", at *{pincite}" if pincite else ""
+    # Docket: skip "No." prefix if the value already begins with "No." or "Nos."
+    docket_prefix = "" if re.match(r"Nos?\.", docket) else "No. "
+
+    # Star pages: pincite may already contain "*" (e.g. "*1, *3"); don't prepend a second "*"
+    if pincite:
+        star_pin = f", at {pincite}" if pincite.startswith("*") else f", at *{pincite}"
+    else:
+        star_pin = ""
 
     academic_full = _normalize(
-        f"{_italicize_procedural(case_name)}, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
+        f"{_italicize_procedural(case_name)}, {docket_prefix}{docket}, {db_id}{star_pin} {parenthetical}{suffix}."
     )
     full_citation = _normalize(
-        f"<em>{case_name}</em>, No. {docket}, {db_id}{star_pin} {parenthetical}{suffix}."
+        f"<em>{case_name}</em>, {docket_prefix}{docket}, {db_id}{star_pin} {parenthetical}{suffix}."
     )
 
     if pincite:
-        short_form = _normalize(f"<em>{short_party}</em>, {db_id}, at *{pincite}.")
+        at_pin = f"at {pincite}" if pincite.startswith("*") else f"at *{pincite}"
+        short_form = _normalize(f"<em>{short_party}</em>, {db_id}, {at_pin}.")
     else:
         short_form = _normalize(f"<em>{short_party}</em>, {db_id}.")
 

@@ -16,6 +16,7 @@ app.add_middleware(
         "http://localhost:5173",
         "https://lexter-alpha.vercel.app",
         "https://lexter.io",
+        "https://www.lexter.io",
     ],
     allow_credentials=True,
     allow_methods=["*"],

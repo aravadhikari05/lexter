@@ -176,7 +176,8 @@ def _validate_structure(generated: GenerateResponse) -> tuple[list[str], list[st
         for issue in _check_balanced_html(text):
             errors.append(f"{label}: {issue}")
 
-        if "<em>" not in text or "</em>" not in text:
+        # academicFull legitimately has no <em> for plain party names (roman text rule)
+        if label != "academicFull" and ("<em>" not in text or "</em>" not in text):
             errors.append(f"{label} missing italicized case name (<em>…</em>)")
 
     # Full citations must contain a parenthetical with a 4-digit year,
@@ -245,7 +246,10 @@ def _validate_fields_in_output(
     if case_name:
         for label in ("academicFull", "fullCitation"):
             text = getattr(generated, label)
-            if case_name not in text:
+            # Strip HTML tags before comparing — academicFull wraps procedural
+            # phrases in <em> (e.g. "In re Fairfax" → "<em>In re</em> Fairfax")
+            text_plain = re.sub(r"<[^>]+>", "", text)
+            if case_name not in text_plain:
                 warnings.append(f"{label} does not contain case name '{case_name}'")
 
     if not is_unpublished:

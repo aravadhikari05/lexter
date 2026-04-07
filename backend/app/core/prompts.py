@@ -76,11 +76,12 @@ Field rules:
 
 - volume, reporter, firstPage, court, year:
   Extract verbatim if the user provided them.
-  If the user did NOT provide them, infer them from your knowledge of the case.
-  For well-known cases (Brown v. Board, Miranda v. Arizona, Roe v. Wade, etc.)
-  you know these values — fill them in confidently.
+  If the user did NOT provide them, search your training data for the correct values.
+  You have been trained on extensive legal databases and case law — attempt to fill in
+  fields for ANY case you have knowledge of, not just famous ones. A case doesn't need
+  to be well-known for you to know its citation. Fill in whatever you can find.
   Put inferred values in needsConfirmation, NOT missingFields.
-  Only put in missingFields if you genuinely have no idea whatsoever.
+  Only put in missingFields if you have truly zero knowledge of the case.
 
 - reporter: extract or infer the reporter abbreviation (e.g. "U.S.", "F.3d", "S. Ct.").
   Do NOT normalize if the user provided it — extract verbatim.
@@ -101,8 +102,9 @@ Field rules:
 - isUnpublished: true if unreported (docket but no volume/reporter, or WL/LX identifier).
 
 missingFields rules — STRICT:
-- Only list a field here if you have NO knowledge of its value whatsoever.
-- For well-known cases, volume/reporter/firstPage/court/year should almost never be missing.
+- Only list a field here if you have absolutely zero knowledge of its value.
+- If you can make a reasonable inference from your training data, put it in needsConfirmation instead.
+- Err on the side of filling in values — the user can correct them in the confirm step.
 - pincite, weightParenthetical, explanatoryParenthetical are NEVER in missingFields.
 - Inferred fields go in needsConfirmation, not missingFields.
 

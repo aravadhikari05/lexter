@@ -1,4 +1,5 @@
 import json
+import re
 import httpx
 from openai import AsyncOpenAI
 from app.core.config import settings
@@ -11,20 +12,38 @@ client = AsyncOpenAI(
 
 def safe_json(text: str) -> dict:
     text = text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[-1]
-        text = text.rsplit("```", 1)[0]
+    # Extract from a ```...``` block anywhere in the response
+    block = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+    if block:
+        return json.loads(block.group(1).strip())
+    # Extract the first {...} object spanning multiple lines
+    obj = re.search(r"\{[\s\S]*\}", text)
+    if obj:
+        return json.loads(obj.group(0))
     return json.loads(text)
 
+def _inject_no_reasoning(kwargs: dict) -> dict:
+    extra = kwargs.pop("extra_body", {}) or {}
+    extra.setdefault("reasoning", {"effort": "none"})
+    kwargs["extra_body"] = extra
+    return kwargs
+
 async def complete(messages: list[dict], **kwargs) -> str:
+    kwargs = _inject_no_reasoning(kwargs)
+    extra = kwargs.get("extra_body", {})
+    if extra.get("tools"):
+        print(f"[LLM] web_search enabled | model={settings.model}", flush=True)
     resp = await client.chat.completions.create(
         model=settings.model,
         messages=messages,
         **kwargs,
     )
-    return resp.choices[0].message.content or ""
+    content = resp.choices[0].message.content or ""
+    # print(f"\n[LLM] {content}\n", flush=True)
+    return content
 
 async def stream(messages: list[dict], **kwargs):
+    kwargs = _inject_no_reasoning(kwargs)
     return await client.chat.completions.create(
         model=settings.model,
         messages=messages,

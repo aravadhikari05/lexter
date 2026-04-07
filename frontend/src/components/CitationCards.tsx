@@ -5,7 +5,6 @@ import type { CitationResult } from '../types'
 interface Tab {
   key:   string
   label: string
-  rule:  string
   dot:   string
   html:  string
 }
@@ -24,11 +23,10 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
   const warnings = result.validationWarnings ?? []
 
   const TABS: Tab[] = [
-    { key: 'acad',  label: 'ACADEMIC',     rule: 'Rule 10 · small caps', dot: 'var(--accent)', html: result.academicFull },
-    { key: 'short', label: 'SHORT FORM',   rule: 'Rule 10.9',            dot: 'var(--muted)',  html: result.shortForm },
-    { key: 'full',  label: 'PRACTITIONER', rule: 'Rule 10 · italics',    dot: 'var(--green)',  html: result.fullCitation },
+    { key: 'acad',  label: 'ACADEMIC',     dot: 'var(--accent)', html: result.academicFull },
+    { key: 'short', label: 'SHORT FORM',   dot: 'var(--muted)',  html: result.shortForm },
+    { key: 'full',  label: 'PRACTITIONER', dot: 'var(--green)',  html: result.fullCitation },
   ]
-  const active = TABS.find(t => t.key === tab)!
 
   const copy = useCallback((html: string, key: string) => {
     navigator.clipboard?.writeText(html.replace(/<[^>]+>/g, ''))
@@ -172,41 +170,32 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
           </div>
         )}
 
-        {/* Footer */}
-        <div style={{
-          borderTop: '1px solid var(--border)', padding: '7px 14px',
-          display: 'flex', alignItems: 'center', gap: 6,
-        }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, color: 'var(--dimmer)', letterSpacing: '.08em' }}>
-            RULES USED:
-          </span>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, color: 'var(--faint)', letterSpacing: '.06em' }}>
-            {active.rule}
-          </span>
-          {sourceUrl && (
-            <>
-              <span style={{ fontSize: 9, color: 'var(--dimmer)' }}>·</span>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, color: 'var(--dimmer)', letterSpacing: '.08em' }}>
-                SOURCE:
-              </span>
-              <a
-                href={sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: 9, letterSpacing: '.06em',
-                  color: 'var(--accent)', textDecoration: 'none', opacity: .7,
-                  transition: 'opacity .15s',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = '1' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = '.7' }}
-              >
-                COURTLISTENER ↗
-              </a>
-            </>
-          )}
-        </div>
+        {/* Footer — source link */}
+        {sourceUrl && (
+          <div style={{
+            borderTop: '1px solid var(--border)', padding: '7px 14px',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, color: 'var(--dimmer)', letterSpacing: '.08em' }}>
+              SOURCE:
+            </span>
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 9, letterSpacing: '.06em',
+                color: 'var(--accent)', textDecoration: 'none', opacity: .7,
+                transition: 'opacity .15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = '1' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = '.7' }}
+            >
+              COURTLISTENER ↗
+            </a>
+          </div>
+        )}
 
       </div>
     </div>

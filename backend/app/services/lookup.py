@@ -93,15 +93,15 @@ def mark_auto_filled(parsed: ParseResponse, raw_input: str) -> ParseResponse:
     Called in parser.py right after parsing.
     """
     raw_lower = raw_input.lower()
-    auto: list[str] = []
+    auto: dict[str, str] = dict(parsed.autoFilled or {})
 
     for field in TRACKED_FIELDS:
         val = getattr(parsed, field)
         if val and str(val).lower() not in raw_lower:
-            auto.append(field)
+            auto[field] = "LLM"
 
     updated = parsed.model_dump()
-    updated["autoFilled"] = sorted(auto)
+    updated["autoFilled"] = auto
     return ParseResponse(**updated)
 
 
@@ -169,8 +169,9 @@ async def cross_validate(parsed: ParseResponse) -> ParseResponse:
     if not _is_same_case(cl, parsed.volume):
         return parsed  # wrong case — trust LLM entirely
 
-    needs_conf = set(parsed.needsConfirmation or [])
-    updated    = parsed.model_dump()
+    needs_conf  = set(parsed.needsConfirmation or [])
+    updated     = parsed.model_dump()
+    auto_filled = dict(updated.get("autoFilled") or {})
 
     # ── Reporter + firstPage ──────────────────────────────────────────────────
     cl_citations = cl.get("citation", [])
@@ -181,20 +182,27 @@ async def cross_validate(parsed: ParseResponse) -> ParseResponse:
             if cl_val:
                 updated[field] = cl_val
                 needs_conf.discard(field)  # CL verified it — trusted
+                if field in auto_filled:
+                    auto_filled[field] = "CL"
 
     # ── Court ─────────────────────────────────────────────────────────────────
     cl_court_id = cl.get("court", "")
     if cl_court_id in CL_COURT_MAP:
         updated["court"] = CL_COURT_MAP[cl_court_id]
         needs_conf.discard("court")
+        if "court" in auto_filled:
+            auto_filled["court"] = "CL"
 
     # ── Year ──────────────────────────────────────────────────────────────────
     date_filed = (cl.get("dateFiled") or "")[:4]
     if date_filed:
         updated["year"] = date_filed
         needs_conf.discard("year")
+        if "year" in auto_filled:
+            auto_filled["year"] = "CL"
 
     # autoFilled intentionally NOT cleared — badge always shows for
     # fields the user didn't provide, even if CL verified them
+    updated["autoFilled"] = auto_filled
     updated["needsConfirmation"] = sorted(needs_conf)
     return ParseResponse(**updated)

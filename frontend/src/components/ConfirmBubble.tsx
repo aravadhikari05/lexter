@@ -30,13 +30,14 @@ function buildRows(isScotus: boolean): ParseField[][] {
   ]
 }
 
-function Field({ k, parsed, onEdit, placeholder, autoFilled }: {
-  k:            ParseField
-  parsed:       ParseResponse
-  onEdit:       (field: string, value: string) => void
-  placeholder?: string
-  autoFilled?:  boolean
+function Field({ k, parsed, onEdit, placeholder, autoFilledSource }: {
+  k:                ParseField
+  parsed:           ParseResponse
+  onEdit:           (field: string, value: string) => void
+  placeholder?:     string
+  autoFilledSource?: string | null
 }) {
+  const autoFilled = !!autoFilledSource
   const borderDefault = autoFilled ? '#7a7a5a' : 'var(--border-b)'
   const val = (parsed as unknown as Record<string, unknown>)[k as string]
 
@@ -57,7 +58,7 @@ function Field({ k, parsed, onEdit, placeholder, autoFilled }: {
             padding: '1px 5px', fontWeight: 600,
             border: '1px solid var(--border)',
           }}>
-            FILLED IN
+            {autoFilledSource === 'CL' ? 'COURTLISTENER' : 'LLM'}
           </span>
         )}
       </span>
@@ -84,8 +85,8 @@ function Field({ k, parsed, onEdit, placeholder, autoFilled }: {
 }
 
 export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Props) {
-  const autoFilledSet = new Set(parsed.autoFilled ?? [])
-  const hasAutoFilled = autoFilledSet.size > 0
+  const autoFilledMap = parsed.autoFilled ?? {}
+  const hasAutoFilled = Object.keys(autoFilledMap).length > 0
 
   return (
     <div style={{
@@ -121,7 +122,7 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
             {row.map(k => (
               <Field
                 key={k as string} k={k} parsed={parsed} onEdit={onEdit}
-                autoFilled={autoFilledSet.has(k as string)}
+                autoFilledSource={autoFilledMap[k as string] ?? null}
                 placeholder={
                   k === 'pincite' || k === 'weightParenthetical' || k === 'explanatoryParenthetical'
                     ? 'optional' : '—'

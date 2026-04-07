@@ -1,5 +1,5 @@
 export interface ParseResponse {
-  autoFilled?:               string[]
+  autoFilled?:               Record<string, string>
   caseName?:                 string | null
   volume?:                   string | null
   reporter?:                 string | null

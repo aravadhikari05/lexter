@@ -108,6 +108,16 @@ The LLM returns JSON with structured fields:
   "court": null,
   "year": "1954",
   "isUnpublished": false,
+  "history": [],
+  "popularName": null,
+  "parallelVolume": null,
+  "parallelReporter": null,
+  "parallelFirstPage": null,
+  "weightParenthetical": null,
+  "weightParenthetical2": null,
+  "quotingParenthetical": null,
+  "citingParenthetical": null,
+  "explanatoryParenthetical": null,
   "missingFields": [],
   "needsConfirmation": ["volume", "reporter", "firstPage", "year"]
 }
@@ -115,7 +125,7 @@ The LLM returns JSON with structured fields:
 
 For well-known cases, the LLM infers fields from training data. Inferred fields go in `needsConfirmation`, not `missingFields`.
 
-**Schema:** `ParseRequest` -> `ParseResponse` in `backend/app/schemas/citation.py`
+**Schema:** `ParseRequest` -> `ParseResponse` in `backend/app/schemas/citation.py`. Full field list includes: `caseName`, `volume`, `reporter`, `firstPage`, `pincite`, `court`, `year`, `fullDate`, `docket`, `dbIdentifier`, `weightParenthetical`, `weightParenthetical2`, `quotingParenthetical`, `citingParenthetical`, `explanatoryParenthetical`, `history` (list[dict]), `popularName`, `parallelVolume`, `parallelReporter`, `parallelFirstPage`, `isScotus`, `isUnpublished`, `jurisdiction`, `missingFields`, `needsConfirmation`, `autoFilled`.
 
 ### 3b: Deterministic Normalization
 
@@ -248,12 +258,17 @@ Two-tier formatting approach:
 
 **Published cases (B10.1.1-B10.1.3):**
 ```
-<em>Brown v. Bd. of Educ.</em>, 347 U.S. 483 (1954).
+academicFull: Brown v. Bd. of Educ., 347 U.S. 483 (1954).
+fullCitation: <em>Brown v. Bd. of Educ.</em>, 347 U.S. 483 (1954).
 ```
-- Requires: `caseName`, `volume`, `reporter`, `firstPage`, `year`
+- Requires: `caseName`, `volume`, `reporter`, `firstPage`, `year` (year omitted when same-year history applies per R10.7.1(a))
 - SCOTUS: year-only parenthetical `(1954)`
-- Non-SCOTUS: court + year `(9th Cir. 2023)`
-- Parentheticals appended per Rule 10.6.4: `(weight) (explanatory)`
+- Non-SCOTUS with multi-court reporter: court + year `(9th Cir. 2023)`; state official reporters omit court per R10.4(b)
+- Procedural phrases (`In re`, `Ex parte`, `ex rel.`) italicized in academicFull per R10.2.1(b)
+- Parentheticals appended per Rule 10.6.4 order: weight → weight2 → quoting/citing → explanatory
+- Parallel citations (R10.3.1): `, {par_vol} {par_rep} {par_page}` appended after primary cite
+- Popular names (R10.2.1(k)): `(<em>name</em>)` after case name
+- Subsequent/prior history (R10.7): rendered via `_build_history()` — handles `aff'd`, `rev'd`, `overruled by`, `sub nom.`, prior history (`aff'g`), and `and` connectors
 
 **Unpublished slip opinions (B10.1.4):**
 ```
@@ -267,11 +282,20 @@ Two-tier formatting approach:
 <em>Doe v. Smith</em>, No. 22-1234, 2023 WL 12345 (S.D.N.Y. Jan. 15, 2023).
 ```
 - Requires: `caseName`, `docket`, `dbIdentifier`, `court`, `fullDate`
+- Docket prefix: skips "No." when docket already starts with "No." or "Nos."
+- Star pages: skips prepending `*` when pincite already contains `*` (e.g. `*1, *3`)
 
 **Short form (Rule 10.9):**
-- Uses `_pick_short_party()` to select party name
-- If first party is a government entity (United States, State, People, any US state name, etc.), uses the second party
-- Published: `<em>Brown</em>, 347 U.S. at 483.`
+- Uses `_pick_short_party()` with ordered rules:
+  1. No `v.` → return whole name (In re, Ex parte cases)
+  2. `ex rel.` in second party → use relator (name after `ex rel.`)
+  3. `ex rel.` in first party → strip to main litigant before `ex rel.`
+  4. First party is a gov entity/geographic unit (`_GOV_TERMS` regex — ~50 state names, "United States", "City of", etc.) → use second party
+  5. First party is a known government official surname (`_GOV_OFFICIAL_SURNAMES` — AGs, federal officials) → use second party
+  6. Compound corporate first party (contains ` & `) → truncate to first word
+  7. Default: use first party
+- Published: `<em>Brown</em>, 347 U.S. at 483.` (parallel cite omitted per R10.9)
+- Electronic DB: `<em>Doe</em>, 2023 WL 12345, at *5.`
 - Unpublished: `<em>Doe</em>, slip op. at 5.`
 
 ### 7b: LLM Fallback
@@ -292,7 +316,6 @@ If `format_case()` raises `FormatterError`, falls back to `_generate_via_llm()`:
 - **Non-case source types have no deterministic path.** `generator.py:22` guards the formatter with `if source_type == "case"`. Statutes, regulations, etc. go straight to LLM. `rule_lookup.py:13` has a TODO for this. Statutes are highly templatable and should get a deterministic formatter next.
 - **LLM fallback uses the same model.** The generation LLM call uses the same model and temperature as parsing. For formatting (a more constrained task), a smaller/faster model or higher temperature might be acceptable.
 - **`get_specific_rules()` is only implemented for cases.** Returns empty string for all other source types.
-- **The formatter doesn't handle subsequent history (B10.1.6).** The schema has a `history` check in `get_specific_rules()` but `ParseResponse` has no `history` field.
 
 ---
 
@@ -418,11 +441,12 @@ These two output fields are **not identical** — they differ in how the case na
 
 **Example:**
 
-- `academicFull`: `Brown v. Bd. of Educ., 347 U.S. 483 (1954).` ← no `<em>` on full citation
-- `fullCitation`: `<em>Brown v. Bd. of Educ.</em>, 347 U.S. 483 (1954).` ← `<em>` on full citation
+- `academicFull`: `Brown v. Bd. of Educ., 347 U.S. 483 (1954).` ← no `<em>` on case name
+- `academicFull` (procedural): `<em>In re</em> Fairfax, 247 F.3d 1 (1st Cir. 2001).` ← procedural phrase italicized per R10.2.1(b)
+- `fullCitation`: `<em>Brown v. Bd. of Educ.</em>, 347 U.S. 483 (1954).` ← entire case name in `<em>`
 - `shortForm`: `<em>Brown</em>, 347 U.S. at 483.` ← `<em>` in both contexts
 
-The current `formatter.py` incorrectly applies `<em>` to the case name in `academicFull`. This is a known bug to be fixed as part of the formatter test suite.
+The formatter correctly implements this distinction: `academicFull` uses plain roman case names (with procedural phrases like `In re`, `Ex parte`, `ex rel.` italicized per R10.2.1(b)), while `fullCitation` wraps the entire case name in `<em>`.
 
 ---
 
@@ -462,12 +486,14 @@ The following Bluebook case citation rules are intentionally excluded from the f
 | `backend/app/schemas/chat.py` | `ChatRequest`, `HistoryMessage` |
 | `backend/app/services/parser.py` | LLM field extraction + post-processing |
 | `backend/app/services/generator.py` | Two-tier citation generation |
-| `backend/app/services/formatter.py` | Deterministic Bluebook formatter |
+| `backend/app/services/formatter.py` | Deterministic Bluebook formatter (published, unpublished, electronic DB; history, parallel cites, popular names, parentheticals) |
 | `backend/app/services/validator.py` | Post-generation validation |
 | `backend/app/services/lookup.py` | CourtListener cross-validation + auto-fill tracking |
 | `backend/app/utils/normalizer.py` | T1 reporter, T7 court, T6 case name normalization |
 | `backend/app/utils/t6_abbreviator.py` | Table T6 word-level abbreviation |
 | `backend/app/utils/missing_fields.py` | Deterministic missing field checker |
 | `backend/app/utils/rule_lookup.py` | Bluebook rule file loader; `get_parser_rules(tags)` for tiered bundle selection, `get_specific_rules()` for generator |
+| `backend/tests/fixtures/formatter_cases.py` | Fixture cases for deterministic formatter tests (214 cases) |
+| `backend/tests/test_deterministic_formatter.py` | Main formatter test suite (academic, full, short, xfail tracking) |
 | `backend/Bluebook/` | Bluebook rule documentation (Bluepages + Whitepages) |
 | `backend/Bluebook/Condensed/` | Condensed rule bundles for parser RAG (base_case, published_case, unpublished_case, parenthetical_case, history_case) |

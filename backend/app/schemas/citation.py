@@ -40,7 +40,7 @@ class ParseResponse(BaseModel):
     jurisdiction:            str            = "Unknown"
     missingFields:           list[str]      = []
     needsConfirmation:       list[str]      = []
-    autoFilled:              list[str]      = []  # fields not given by user, filled by LLM or CL
+    autoFilled:              dict[str, str]  = {}  # field → source ("LLM" or "CL")
 
 
 class GenerateRequest(BaseModel):

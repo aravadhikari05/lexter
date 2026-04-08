@@ -21,13 +21,13 @@ async def parse_citation(req: ParseRequest, source_type: str = "case", tags: lis
         ],
         max_tokens=500,
         temperature=0,
-        # Enables web search which is $5/1k results 
+        # Enables web search which is more costly
         # extra_body={
         #     "tools": [{
         #         "type": "openrouter:web_search",
         #         "parameters": {
-        #             "engine": "native",
         #             "max_results": 3,
+        #             "search_context_size": "low"
         #         },
         #     }],
         # },

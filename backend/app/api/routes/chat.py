@@ -36,11 +36,12 @@ def sse(data: dict) -> str:
 async def stream_chat(req: ChatRequest):
     system = build_chat_system(req.intent, req.source_type)
 
-    messages = [{"role": "system", "content": system}]
-    for h in req.history[-10:]:
-        messages.append({"role": h.role, "content": h.content})
-    if not messages or messages[-1].get("content") != req.message:
-        messages.append({"role": "user", "content": req.message})
+    # Triage only needs the current message — history causes the LLM to
+    # concatenate prior inputs into %%PROCEED::, polluting raw_input.
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user",   "content": req.message},
+    ]
 
     async def event_stream():
         # ── Buffer LLM response ───────────────────────────────────────────────

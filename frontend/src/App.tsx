@@ -20,6 +20,22 @@ export interface ConversationMeta {
   updated_at: string
 }
 
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
+function useWindowWidth() {
+  const [width, setWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  )
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return width
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+
 export default function App() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
 
@@ -40,6 +56,12 @@ export default function App() {
   const [currentConvId, setCurrentConvId] = useState<string | null>(null)
   const [conversations,  setConversations] = useState<ConversationMeta[]>([])
 
+  // Mobile sidebar drawer state
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const windowWidth = useWindowWidth()
+  const isMobile    = windowWidth < 768
+
   const sessionRef        = useRef<Session | null>(null)
   const currentConvIdRef  = useRef<string | null>(null)
   const selectedIntentRef = useRef<IntentId>('create')
@@ -54,6 +76,9 @@ export default function App() {
   useEffect(() => { selectedIntentRef.current = selectedIntent },   [selectedIntent])
   useEffect(() => { selectedSourceRef.current = selectedSource },   [selectedSource])
   useEffect(() => { messagesRef.current = messages },               [messages])
+
+  // Close sidebar on resize to desktop
+  useEffect(() => { if (!isMobile) setSidebarOpen(false) }, [isMobile])
 
   // ── Auth ───────────────────────────────────────────────────────────────────
 
@@ -142,6 +167,8 @@ export default function App() {
     setInput('')
     setFile(null)
     setFileText('')
+    // Close mobile sidebar after selecting a chat
+    if (isMobile) setSidebarOpen(false)
     try {
       const { data } = await supabase
         .from('messages')
@@ -160,6 +187,28 @@ export default function App() {
     } catch { /* silently ignore */ }
   }
 
+  // ── Rename / Delete ────────────────────────────────────────────────────────
+
+  const renameConversation = async (convId: string, newTitle: string) => {
+    try {
+      await supabase
+        .from('conversations')
+        .update({ title: newTitle.slice(0, 60) })
+        .eq('id', convId)
+      setConversations(prev =>
+        prev.map(c => c.id === convId ? { ...c, title: newTitle.slice(0, 60) } : c)
+      )
+    } catch { /* silently ignore */ }
+  }
+
+  const deleteConversation = async (convId: string) => {
+    try {
+      await supabase.from('conversations').delete().eq('id', convId)
+      setConversations(prev => prev.filter(c => c.id !== convId))
+      if (currentConvIdRef.current === convId) handleNewChat()
+    } catch { /* silently ignore */ }
+  }
+
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const addMsg = (msg: Omit<ChatMessage, 'id'>) =>
@@ -170,6 +219,7 @@ export default function App() {
     setBusy(false); setPendingParsed(null); setPendingEdits({})
     currentConvIdRef.current = null
     setCurrentConvId(null)
+    if (isMobile) setSidebarOpen(false)
   }
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -421,7 +471,15 @@ export default function App() {
 
   const noMessages = messages.length === 0
   const canSend    = input.trim().length > 0 && !busy
-  const chatInner: React.CSSProperties = { width: '100%', maxWidth: 780, margin: '0 auto' }
+
+  // On mobile the input area gets less horizontal padding
+  const chatPadX = isMobile ? '12px' : '24px'
+
+  const chatInner: React.CSSProperties = {
+    width: '100%',
+    maxWidth: 780,
+    margin: '0 auto',
+  }
 
   const inputBoxProps = {
     input, setInput, file, setFile, setFileText, busy,
@@ -436,14 +494,40 @@ export default function App() {
   }
 
   const s = {
-    shell:    { display: 'flex', flexDirection: 'column' as const, flex: 1, minWidth: 0, height: '100vh' },
-    header:   { flexShrink: 0, padding: '18px 20px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-    messages: { flex: 1, overflowY: 'auto' as const, padding: '24px 24px 120px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center' },
-    msgCol:   { width: '100%', maxWidth: 780, display: 'flex', flexDirection: 'column' as const, gap: 18 },
-    msgRow:   (role: string) => ({ display: 'flex', flexDirection: 'column' as const, gap: 4, alignItems: role === 'user' ? 'flex-end' : 'flex-start', animation: 'msgIn .2s ease both' }),
-    bubble:   (role: string) => ({
-      maxWidth: '88%', padding: '12px 16px', borderRadius: 12,
-      fontFamily: "'Inter', sans-serif", fontSize: 14, lineHeight: 1.75, color: 'var(--text)',
+    shell: {
+      display: 'flex', flexDirection: 'column' as const,
+      flex: 1, minWidth: 0, height: '100vh',
+      // On mobile when sidebar is open, prevent background scroll
+      overflow: 'hidden',
+    },
+    header: {
+      flexShrink: 0,
+      padding: isMobile ? '14px 16px 12px' : '18px 20px 14px',
+      borderBottom: '1px solid var(--border)',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    },
+    messages: {
+      flex: 1, overflowY: 'auto' as const,
+      padding: isMobile ? `20px ${chatPadX} 110px` : `24px ${chatPadX} 120px`,
+      display: 'flex', flexDirection: 'column' as const, alignItems: 'center',
+    },
+    msgCol: {
+      width: '100%', maxWidth: 780,
+      display: 'flex', flexDirection: 'column' as const, gap: 18,
+    },
+    msgRow: (role: string) => ({
+      display: 'flex', flexDirection: 'column' as const, gap: 4,
+      alignItems: role === 'user' ? 'flex-end' : 'flex-start',
+      animation: 'msgIn .2s ease both',
+    }),
+    bubble: (role: string): React.CSSProperties => ({
+      // On mobile constrain bubbles a bit more
+      maxWidth: isMobile ? '92%' : '88%',
+      padding: isMobile ? '10px 13px' : '12px 16px',
+      borderRadius: 12,
+      fontFamily: "'Inter', sans-serif",
+      fontSize: isMobile ? 13 : 14,
+      lineHeight: 1.75, color: 'var(--text)',
       ...(role === 'user' ? {
         background: 'var(--accent-bg)', border: '1px solid var(--accent-bdr)', borderBottomRightRadius: 4,
       } : {
@@ -452,6 +536,16 @@ export default function App() {
       }),
     }),
   }
+
+  // ── Hamburger icon (mobile only) ───────────────────────────────────────────
+
+  const HamburgerIcon = () => (
+    <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+      <rect x="2" y="5"  width="16" height="1.5" rx=".75" fill="currentColor" />
+      <rect x="2" y="9.25"  width="16" height="1.5" rx=".75" fill="currentColor" />
+      <rect x="2" y="13.5" width="16" height="1.5" rx=".75" fill="currentColor" />
+    </svg>
+  )
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
@@ -462,19 +556,56 @@ export default function App() {
         @keyframes glowPulse { 0%,100% { opacity:.6; } 50% { opacity:1; } }
       `}</style>
 
+      {/* Sidebar — on desktop renders inline; on mobile renders as overlay drawer */}
       <Sidebar
         onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
+        onRename={renameConversation}
+        onDelete={deleteConversation}
         conversations={conversations}
         activeConvId={currentConvId}
+        isMobile={isMobile}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
       />
 
+      {/* Mobile sidebar backdrop */}
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 49,
+            background: 'rgba(0,0,0,.55)',
+            backdropFilter: 'blur(2px)',
+            WebkitBackdropFilter: 'blur(2px)',
+          }}
+        />
+      )}
+
       <div style={s.shell}>
+        {/* ── Header ── */}
         <div style={s.header}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: '-.01em' }}>
-              <span style={{ color: 'var(--accent)' }}>Lex</span>ter
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Hamburger on mobile */}
+            {isMobile && (
+              <button
+                onClick={() => setSidebarOpen(true)}
+                style={{
+                  width: 34, height: 34, borderRadius: 8,
+                  background: 'none', border: 'none',
+                  color: 'var(--faint)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 0,
+                }}
+              >
+                <HamburgerIcon />
+              </button>
+            )}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: isMobile ? 16 : 18, fontWeight: 700, letterSpacing: '-.01em' }}>
+                <span style={{ color: 'var(--accent)' }}>Lex</span>ter
+              </span>
+            </div>
           </div>
           <button
             onClick={handleSignOut}
@@ -491,18 +622,56 @@ export default function App() {
           </button>
         </div>
 
+        {/* ── Messages ── */}
         <div style={s.messages}>
           {noMessages ? (
-            <div style={{ ...chatInner, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingBottom: 42 }}>
-              <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 40, fontWeight: 700, color: 'var(--text)', margin: 0, marginBottom: 30, letterSpacing: '-.02em', textAlign: 'center' }}>
+            <div style={{
+              ...chatInner, flex: 1,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              paddingBottom: isMobile ? 24 : 42,
+            }}>
+              <h1 style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: isMobile ? 26 : 40,
+                fontWeight: 700, color: 'var(--text)',
+                margin: 0, marginBottom: isMobile ? 20 : 30,
+                letterSpacing: '-.02em', textAlign: 'center',
+              }}>
                 What do you need to cite?
               </h1>
-              <div style={{ width: '100%', padding: '0 24px', boxSizing: 'border-box' }}>
-                <div style={{ position: 'relative', borderRadius: 22, boxShadow: inputFocused ? '0 0 0 1.5px var(--accent), 0 0 18px 4px color-mix(in srgb, var(--accent) 45%, transparent)' : '0 0 0 0px transparent', transition: 'box-shadow .35s ease' }}>
-                  <div style={{ position: 'absolute', inset: -1.5, borderRadius: 22, overflow: 'hidden', zIndex: 0, opacity: inputFocused ? 0 : 1, transition: 'opacity .3s ease', animation: 'glowPulse 3s ease-in-out infinite', pointerEvents: 'none' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '200%', height: '200%', background: `conic-gradient(from 0deg, transparent 0deg, var(--accent) 20deg, transparent 110deg, transparent 180deg, var(--accent) 235deg, transparent 290deg, transparent 360deg)`, animation: 'glowSpin 3.6s linear infinite' }} />
-                  </div>
-                  <div style={{ position: 'relative', zIndex: 1, padding: '14px 14px 12px', background: 'var(--surface)', borderRadius: 22, border: '1px solid var(--border-b)' }}>
+              <div style={{ width: '100%', boxSizing: 'border-box' }}>
+                <div style={{
+                  position: 'relative', borderRadius: 22,
+                  boxShadow: inputFocused
+                    ? '0 0 0 1.5px var(--accent), 0 0 18px 4px color-mix(in srgb, var(--accent) 45%, transparent)'
+                    : '0 0 0 0px transparent',
+                  transition: 'box-shadow .35s ease',
+                }}>
+                  {/* Animated border — skip on mobile for perf */}
+                  {!isMobile && (
+                    <div style={{
+                      position: 'absolute', inset: -1.5, borderRadius: 22,
+                      overflow: 'hidden', zIndex: 0,
+                      opacity: inputFocused ? 0 : 1,
+                      transition: 'opacity .3s ease',
+                      animation: 'glowPulse 3s ease-in-out infinite',
+                      pointerEvents: 'none',
+                    }}>
+                      <div style={{
+                        position: 'absolute', top: '50%', left: '50%',
+                        width: '200%', height: '200%',
+                        background: `conic-gradient(from 0deg, transparent 0deg, var(--accent) 20deg, transparent 110deg, transparent 180deg, var(--accent) 235deg, transparent 290deg, transparent 360deg)`,
+                        animation: 'glowSpin 3.6s linear infinite',
+                      }} />
+                    </div>
+                  )}
+                  <div style={{
+                    position: 'relative', zIndex: 1,
+                    padding: isMobile ? '10px 10px 8px' : '14px 14px 12px',
+                    background: 'var(--surface)', borderRadius: 22,
+                    border: '1px solid var(--border-b)',
+                  }}>
                     <InputBox {...inputBoxProps} />
                   </div>
                 </div>
@@ -516,10 +685,18 @@ export default function App() {
                     {msg.role === 'user' ? 'YOU' : 'ASSISTANT'}
                   </div>
                   {msg.type === 'thinking' ? (
-                    <div style={{ background: 'var(--surface)', border: '1px solid var(--border-b)', borderRadius: 12, borderBottomLeftRadius: 4, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      background: 'var(--surface)', border: '1px solid var(--border-b)',
+                      borderRadius: 12, borderBottomLeftRadius: 4,
+                      padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
                       <div>
                         {[0,1,2].map(i => (
-                          <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', marginRight: 3, animation: `blink 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                          <span key={i} style={{
+                            width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)',
+                            display: 'inline-block', marginRight: 3,
+                            animation: `blink 1.2s ease-in-out ${i * 0.2}s infinite`,
+                          }} />
                         ))}
                       </div>
                       <span style={{ fontSize: 11, color: 'var(--faint)', fontFamily: "'Inter', sans-serif" }}>thinking…</span>
@@ -549,10 +726,20 @@ export default function App() {
           )}
         </div>
 
+        {/* ── Pinned input bar (active chat) ── */}
         {!noMessages && (
-          <div style={{ padding: '12px 24px 24px', background: 'var(--bg)' }}>
+          <div style={{
+            padding: isMobile ? '10px 12px 16px' : '12px 24px 24px',
+            background: 'var(--bg)',
+            // Safe area for phones with home indicator
+            paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom))' : '24px',
+          }}>
             <div style={chatInner}>
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--border-b)', borderRadius: 20, padding: '14px 14px 12px' }}>
+              <div style={{
+                background: 'var(--surface)', border: '1px solid var(--border-b)',
+                borderRadius: 20,
+                padding: isMobile ? '10px 10px 8px' : '14px 14px 12px',
+              }}>
                 <InputBox {...inputBoxProps} />
               </div>
             </div>

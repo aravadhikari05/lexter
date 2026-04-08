@@ -1,3 +1,4 @@
+// src/components/StepTicker.tsx
 import type { TickerStep } from '../types'
 
 interface Props {
@@ -17,8 +18,9 @@ export default function StepTicker({ steps, done }: Props) {
       borderRadius: 12,
       borderBottomLeftRadius: 4,
       overflow: 'hidden',
-      minWidth: 280,
-      maxWidth: '88%',
+      // Let it fill the message column width on mobile
+      width: '100%',
+      maxWidth: 420,
       boxShadow: '0 1px 4px rgba(0,0,0,.2)',
     }} className="animate-msg-in">
       <div style={{
@@ -59,7 +61,7 @@ export default function StepTicker({ steps, done }: Props) {
           return (
             <div key={step.id} className="animate-slide-up" style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '5px 14px', opacity, transition: 'opacity .3s',
+              padding: '6px 14px', opacity, transition: 'opacity .3s',
             }}>
               <div style={{
                 width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
@@ -69,7 +71,7 @@ export default function StepTicker({ steps, done }: Props) {
                 transition: 'background .2s',
               }} />
               <span style={{
-                fontSize: 11, letterSpacing: '.05em',
+                fontSize: 12, letterSpacing: '.04em',
                 fontFamily: "'Inter', sans-serif",
                 color: isActive ? 'var(--accent)' : 'var(--muted)',
               }}>

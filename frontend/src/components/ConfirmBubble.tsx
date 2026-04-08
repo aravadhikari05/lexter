@@ -1,3 +1,4 @@
+// src/components/ConfirmBubble.tsx
 import type { ParseResponse } from '../types'
 
 interface Props {
@@ -71,9 +72,11 @@ function Field({ k, parsed, onEdit, placeholder, autoFilledSource }: {
           width: '100%',
           background: 'var(--bg)',
           border: `1px solid ${borderDefault}`,
-          borderRadius: 6, padding: '7px 10px',
+          borderRadius: 6, padding: '8px 10px',
           fontFamily: "'Inter', sans-serif",
-          fontSize: 12, color: 'var(--text)', outline: 'none',
+          // 16px prevents iOS auto-zoom on focus
+          fontSize: 16,
+          color: 'var(--text)', outline: 'none',
           caretColor: 'var(--accent)', transition: 'border-color .15s',
           boxSizing: 'border-box',
         }}
@@ -93,14 +96,20 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
       background: 'var(--surface)',
       border: '1px solid var(--border-b)',
       borderRadius: 12, borderBottomLeftRadius: 4,
-      overflow: 'hidden', width: 560,
+      overflow: 'hidden',
+      // Removed fixed width:560 — now fluid with a max
+      width: '100%',
+      maxWidth: 560,
+      boxSizing: 'border-box',
       boxShadow: '0 1px 4px rgba(0,0,0,.2)',
     }}>
       <div style={{
         background: 'var(--surface2)',
         borderBottom: '1px solid var(--border)',
-        padding: '8px 16px',
+        padding: '8px 14px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 8,
+        flexWrap: 'wrap',
       }}>
         <span style={{ fontSize: 9, letterSpacing: '.12em', color: 'var(--accent)', fontFamily: "'Inter', sans-serif" }}>
           CASE FOUND. DOES THIS LOOK RIGHT?
@@ -116,9 +125,14 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
         )}
       </div>
 
-      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: '14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {buildRows(!!parsed.isScotus).map((row, i) => (
-          <div key={i} style={{ display: 'flex', gap: 10 }}>
+          <div key={i} style={{
+            display: 'flex',
+            // Stack rows with 3+ items vertically on very narrow widths
+            gap: 10,
+            flexWrap: row.length > 2 ? 'wrap' : 'nowrap',
+          }}>
             {row.map(k => (
               <Field
                 key={k as string} k={k} parsed={parsed} onEdit={onEdit}
@@ -141,9 +155,12 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
               fontSize: 11, letterSpacing: '.08em', fontWeight: 500,
               background: working ? 'var(--surface2)' : 'var(--accent)',
               color: working ? 'var(--faint)' : '#111009',
-              border: 'none', borderRadius: 7, padding: '10px 22px',
+              border: 'none', borderRadius: 7, padding: '11px 22px',
               cursor: working ? 'not-allowed' : 'pointer',
               transition: 'background .15s',
+              // Full-width on very small screens
+              width: '100%',
+              maxWidth: 200,
             }}
           >
             {working ? 'GENERATING…' : 'LOOKS GOOD →'}

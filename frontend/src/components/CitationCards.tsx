@@ -1,3 +1,4 @@
+// src/components/CitationCards.tsx
 import { useState, useCallback } from 'react'
 import { Pencil, AlertTriangle, ChevronDown } from 'lucide-react'
 import type { CitationResult } from '../types'
@@ -35,7 +36,12 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
   }, [])
 
   return (
-    <div className="animate-fade-up" style={{ maxWidth: '92%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div className="animate-fade-up" style={{
+      // Fill available width on mobile; cap on desktop
+      width: '100%',
+      maxWidth: '92%',
+      display: 'flex', flexDirection: 'column', gap: 8,
+    }}>
       <div style={{
         background: 'var(--surface)',
         border: '1px solid var(--border-b)',
@@ -44,11 +50,14 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
         boxShadow: '0 0 0 1px rgba(74,74,50,.1), 0 2px 8px rgba(0,0,0,.3)',
       }}>
 
-        {/* Tab switcher */}
+        {/* Tab switcher — scrollable on mobile */}
         <div style={{
           background: 'var(--surface2)',
           borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', gap: 2, padding: '6px 8px',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          WebkitOverflowScrolling: 'touch',
         }}>
           {TABS.map(t => (
             <button
@@ -57,12 +66,16 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontSize: 9, letterSpacing: '.1em',
-                padding: '4px 10px', borderRadius: 5, cursor: 'pointer',
+                padding: '5px 10px', borderRadius: 5, cursor: 'pointer',
                 background: tab === t.key ? 'var(--bg)' : 'none',
                 color:      tab === t.key ? 'var(--text)' : 'var(--faint)',
                 border:     tab === t.key ? '1px solid var(--border-b)' : '1px solid transparent',
                 transition: 'color .15s, background .15s',
                 display: 'flex', alignItems: 'center', gap: 5,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                // Larger tap target
+                minHeight: 32,
               }}
             >
               <span style={{
@@ -78,11 +91,11 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
             onClick={onEdit}
             title="Edit fields"
             style={{
-              marginLeft: 'auto', width: 30, height: 30, borderRadius: 7,
+              marginLeft: 'auto', width: 32, height: 32, borderRadius: 7,
               border: '1px solid var(--border-b)',
               background: 'none', color: 'var(--faint)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'color .15s',
+              transition: 'color .15s', flexShrink: 0,
             }}
           >
             <Pencil size={12} style={{ transform: 'rotate(170deg)' }} />
@@ -96,7 +109,10 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
               key={t.key}
               style={{
                 gridArea: '1/1', padding: '12px 14px',
-                display: 'flex', alignItems: 'flex-start', gap: 10,
+                display: 'flex',
+                // Stack copy button below text on mobile for more reading room
+                flexDirection: 'column',
+                gap: 10,
                 opacity:       t.key === tab ? 1 : 0,
                 pointerEvents: t.key === tab ? 'auto' : 'none',
                 visibility:    t.key === tab ? 'visible' : 'hidden',
@@ -111,20 +127,24 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
                 }}
                 dangerouslySetInnerHTML={{ __html: t.html }}
               />
-              <button
-                onClick={() => copy(t.html, t.key)}
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: 10, letterSpacing: '.06em',
-                  background: copied === t.key ? 'var(--green-bg)' : 'var(--accent-bg)',
-                  color:      copied === t.key ? 'var(--green)'    : 'var(--accent)',
-                  border:    `1px solid ${copied === t.key ? 'var(--green-bdr)' : 'var(--accent-bdr)'}`,
-                  borderRadius: 5, padding: '4px 10px', cursor: 'pointer',
-                  transition: 'background .15s', whiteSpace: 'nowrap', flexShrink: 0,
-                }}
-              >
-                {copied === t.key ? '✓' : 'COPY'}
-              </button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => copy(t.html, t.key)}
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 10, letterSpacing: '.06em',
+                    background: copied === t.key ? 'var(--green-bg)' : 'var(--accent-bg)',
+                    color:      copied === t.key ? 'var(--green)'    : 'var(--accent)',
+                    border:    `1px solid ${copied === t.key ? 'var(--green-bdr)' : 'var(--accent-bdr)'}`,
+                    borderRadius: 5, padding: '6px 14px', cursor: 'pointer',
+                    transition: 'background .15s', whiteSpace: 'nowrap',
+                    // Ensure comfortable tap target
+                    minHeight: 32,
+                  }}
+                >
+                  {copied === t.key ? '✓ COPIED' : 'COPY'}
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -136,9 +156,10 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
               onClick={() => setWarningsOpen(o => !o)}
               style={{
                 width: '100%', cursor: 'pointer',
-                background: 'none', border: 'none', padding: '6px 14px',
+                background: 'none', border: 'none', padding: '8px 14px',
                 display: 'flex', alignItems: 'center', gap: 6,
                 color: 'var(--amber, #d4a017)',
+                minHeight: 38,
               }}
             >
               <AlertTriangle size={11} style={{ flexShrink: 0 }} />
@@ -155,11 +176,11 @@ export default function CitationCards({ result, onEdit, sourceUrl }: Props) {
               />
             </button>
             {warningsOpen && (
-              <ul style={{ margin: 0, padding: '0 14px 8px 30px', listStyle: 'disc' }}>
+              <ul style={{ margin: 0, padding: '0 14px 10px 30px', listStyle: 'disc' }}>
                 {warnings.map((w, i) => (
                   <li key={i} style={{
                     fontFamily: "'Inter', sans-serif",
-                    fontSize: 10, lineHeight: 1.7,
+                    fontSize: 11, lineHeight: 1.7,
                     color: 'var(--amber, #d4a017)',
                   }}>
                     {w}

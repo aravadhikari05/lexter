@@ -11,6 +11,20 @@ const supabase = createClient(
 
 type AuthMode = 'login' | 'signup'
 
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
+function useWindowWidth() {
+  const [width, setWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  )
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return width
+}
+
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const STATS = [
@@ -498,6 +512,7 @@ function ConfirmModal({ email, resent, onResend, onSignIn, onStartOver }: Confir
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       opacity: visible ? 1 : 0,
       transition: 'opacity .25s ease',
+      padding: '16px',
     }}>
       {/* Backdrop */}
       <div
@@ -516,7 +531,8 @@ function ConfirmModal({ email, resent, onResend, onSignIn, onStartOver }: Confir
         background: 'var(--surface)',
         border: '1px solid var(--border-b)',
         borderRadius: 16,
-        width: 400,
+        width: '100%',
+        maxWidth: 400,
         boxShadow: '0 0 0 1px rgba(200,168,75,.08), 0 32px 80px rgba(0,0,0,.6)',
         overflow: 'hidden',
         transform: visible ? 'translateY(0) scale(1)' : 'translateY(16px) scale(.97)',
@@ -657,6 +673,9 @@ export default function LandingPage() {
   const [pendingEmail, setPendingEmail] = useState('')
   const [resent,       setResent]       = useState(false)
 
+  const windowWidth = useWindowWidth()
+  const isMobile    = windowWidth < 768
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60)
     return () => clearTimeout(t)
@@ -713,8 +732,86 @@ export default function LandingPage() {
   const isDisabled  = loading || !email || !password
   const tickerItems = [...TICKER_CITES, ...TICKER_CITES]
 
+  // ─── Mobile overrides ───────────────────────────────────────────────────────
+
+  const rootStyle: React.CSSProperties = isMobile
+    ? {
+        minHeight: '100vh',
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }
+    : S.root
+
+  const leftStyle: React.CSSProperties = isMobile
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        borderRight: 'none',
+        borderBottom: '1px solid var(--border)',
+        position: 'relative',
+        overflow: 'hidden',
+        height: 'auto',
+        flexShrink: 0,
+      }
+    : S.left
+
+  const navStyle: React.CSSProperties = isMobile
+    ? {
+        ...S.nav,
+        padding: '24px 24px 20px',
+      }
+    : S.nav
+
+  const contentStyle: React.CSSProperties = isMobile
+    ? {
+        ...S.content,
+        padding: '0 24px 28px',
+        justifyContent: 'flex-start',
+      }
+    : S.content
+
+  const headlineStyle: React.CSSProperties = isMobile
+    ? {
+        ...S.headline,
+        fontSize: 38,
+        margin: '0 0 16px',
+        maxWidth: '100%',
+      }
+    : S.headline
+
+  const subtextStyle: React.CSSProperties = isMobile
+    ? {
+        ...S.subtext,
+        fontSize: 14,
+        margin: '0 0 28px',
+        maxWidth: '100%',
+        lineHeight: 1.7,
+      }
+    : S.subtext
+
+  const eyebrowStyle: React.CSSProperties = isMobile
+    ? { ...S.eyebrow, marginBottom: 16 }
+    : S.eyebrow
+
+  const rightStyle: React.CSSProperties = isMobile
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        padding: '36px 24px 48px',
+        background: 'var(--surface)',
+        height: 'auto',
+        overflowY: 'visible',
+        flex: 1,
+      }
+    : S.right
+
+  // ────────────────────────────────────────────────────────────────────────────
+
   return (
-    <div style={S.root}>
+    <div style={rootStyle}>
       <style>{`
         @keyframes ticker    { from { transform: translateX(0) } to { transform: translateX(-50%) } }
         @keyframes demoBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
@@ -722,29 +819,30 @@ export default function LandingPage() {
       `}</style>
 
       {/* ── Left panel ── */}
-      <div style={S.left}>
+      <div style={leftStyle}>
         <div style={S.grid} />
-        <div style={S.ghost}>Lex</div>
+        {/* Hide giant ghost text on mobile — too large and clips badly */}
+        {!isMobile && <div style={S.ghost}>Lex</div>}
 
-        <div style={{ ...S.nav, ...tr(0) }}>
+        <div style={{ ...navStyle, ...tr(0) }}>
           <span style={S.logo}>
             <span style={S.logoAccent}>Lex</span>ter
           </span>
           <span style={S.edition}>BLUEBOOK 22ND EDITION</span>
         </div>
 
-        <div style={S.content}>
-          <div style={{ ...S.eyebrow, ...tr(.1) }}>
+        <div style={contentStyle}>
+          <div style={{ ...eyebrowStyle, ...tr(.1) }}>
             <div style={S.eyebrowLine} />
             <span style={S.eyebrowText}>LEGAL CITATION ASSISTANT</span>
           </div>
 
-          <h1 style={{ ...S.headline, ...tr(.15) }}>
-  Bluebook citations.<br />
-  <span style={{ ...S.headlineAccent, fontStyle: 'italic' }}>Done right.</span>
-</h1>
+          <h1 style={{ ...headlineStyle, ...tr(.15) }}>
+            Bluebook citations.<br />
+            <span style={{ ...S.headlineAccent, fontStyle: 'italic' }}>Done right.</span>
+          </h1>
 
-          <p style={{ ...S.subtext, ...tr(.2) }}>
+          <p style={{ ...subtextStyle, ...tr(.2) }}>
             Paste any citation info, and Lexter verifies it against
             real legal databases and returns a Bluebook-accurate
             result in seconds.
@@ -755,19 +853,22 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div style={{ ...S.tickerWrap, opacity: mounted ? .45 : 0, transition: 'opacity .8s .5s ease' }}>
-          <div style={S.tickerTrack}>
-            {tickerItems.map((cite, i) => (
-              <span key={i}>
-                <span style={S.tickerDot}>◦</span>{cite}
-              </span>
-            ))}
+        {/* Ticker — hidden on mobile to keep things clean */}
+        {!isMobile && (
+          <div style={{ ...S.tickerWrap, opacity: mounted ? .45 : 0, transition: 'opacity .8s .5s ease' }}>
+            <div style={S.tickerTrack}>
+              {tickerItems.map((cite, i) => (
+                <span key={i}>
+                  <span style={S.tickerDot}>◦</span>{cite}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── Right panel — auth ── */}
-      <div style={{ ...S.right, opacity: mounted ? 1 : 0, transition: 'opacity .6s .25s ease' }}>
+      <div style={{ ...rightStyle, opacity: mounted ? 1 : 0, transition: 'opacity .6s .25s ease' }}>
         <div style={S.modeSwitcher}>
           {(['signup', 'login'] as AuthMode[]).map(m => (
             <button key={m} onClick={() => switchMode(m)} style={modeButtonStyle(mode === m)}>

@@ -18,8 +18,8 @@ const FIELD_LABELS: Partial<Record<ParseField, string>> = {
   court:                    'Court',
   year:                     'Year',
   pincite:                  'Pincite',
-  weightParenthetical:      'Weight Parenthetical',
-  explanatoryParenthetical: 'Explanatory Parenthetical',
+  weightParenthetical:      'Weight',
+  explanatoryParenthetical: 'Explanatory',
 }
 
 function buildRows(isScotus: boolean): ParseField[][] {
@@ -32,34 +32,34 @@ function buildRows(isScotus: boolean): ParseField[][] {
 }
 
 function Field({ k, parsed, onEdit, placeholder, autoFilledSource }: {
-  k:                ParseField
-  parsed:           ParseResponse
-  onEdit:           (field: string, value: string) => void
-  placeholder?:     string
+  k:                 ParseField
+  parsed:            ParseResponse
+  onEdit:            (field: string, value: string) => void
+  placeholder?:      string
   autoFilledSource?: string | null
 }) {
-  const autoFilled = !!autoFilledSource
+  const autoFilled    = !!autoFilledSource
   const borderDefault = autoFilled ? '#7a7a5a' : 'var(--border-b)'
-  const val = (parsed as unknown as Record<string, unknown>)[k as string]
+  const val           = (parsed as unknown as Record<string, unknown>)[k as string]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1, minWidth: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
       <span style={{
-        fontSize: 9, letterSpacing: '.1em',
+        fontSize: 8.5, letterSpacing: '.09em',
         color: autoFilled ? 'var(--muted)' : 'var(--dimmer)',
         fontFamily: "'Inter', sans-serif", textTransform: 'uppercase',
-        display: 'flex', alignItems: 'center', gap: 5,
+        display: 'flex', alignItems: 'center', gap: 4,
       }}>
         {FIELD_LABELS[k]}
         {autoFilled && (
           <span style={{
-            fontSize: 8, letterSpacing: '.06em',
+            fontSize: 7.5, letterSpacing: '.05em',
             background: 'rgba(255,255,255,0.05)',
             color: 'var(--muted)', borderRadius: 3,
-            padding: '1px 5px', fontWeight: 600,
+            padding: '1px 4px', fontWeight: 600,
             border: '1px solid var(--border)',
           }}>
-            {autoFilledSource === 'CL' ? 'COURTLISTENER' : 'LLM'}
+            FILLED
           </span>
         )}
       </span>
@@ -69,13 +69,11 @@ function Field({ k, parsed, onEdit, placeholder, autoFilledSource }: {
         onChange={e => onEdit(k as string, e.target.value)}
         placeholder={placeholder || '—'}
         style={{
-          width: '100%',
-          background: 'var(--bg)',
+          width: '100%', background: 'var(--bg)',
           border: `1px solid ${borderDefault}`,
-          borderRadius: 6, padding: '8px 10px',
+          borderRadius: 5, padding: '6px 8px',
           fontFamily: "'Inter', sans-serif",
-          // 16px prevents iOS auto-zoom on focus
-          fontSize: 16,
+          fontSize: 13,
           color: 'var(--text)', outline: 'none',
           caretColor: 'var(--accent)', transition: 'border-color .15s',
           boxSizing: 'border-box',
@@ -93,46 +91,34 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
 
   return (
     <div style={{
-      background: 'var(--surface)',
-      border: '1px solid var(--border-b)',
-      borderRadius: 12, borderBottomLeftRadius: 4,
-      overflow: 'hidden',
-      // Removed fixed width:560 — now fluid with a max
-      width: '100%',
-      maxWidth: 560,
-      boxSizing: 'border-box',
-      boxShadow: '0 1px 4px rgba(0,0,0,.2)',
+      background: 'var(--surface)', border: '1px solid var(--border-b)',
+      borderRadius: 10, borderBottomLeftRadius: 4,
+      overflow: 'hidden', width: '100%', maxWidth: 520,
+      boxSizing: 'border-box', boxShadow: '0 1px 4px rgba(0,0,0,.2)',
     }}>
+      {/* Header */}
       <div style={{
-        background: 'var(--surface2)',
-        borderBottom: '1px solid var(--border)',
-        padding: '8px 14px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 8,
-        flexWrap: 'wrap',
+        background: 'var(--surface2)', borderBottom: '1px solid var(--border)',
+        padding: '6px 12px', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', gap: 8, flexWrap: 'wrap',
       }}>
-        <span style={{ fontSize: 9, letterSpacing: '.12em', color: 'var(--accent)', fontFamily: "'Inter', sans-serif" }}>
-          CASE FOUND. DOES THIS LOOK RIGHT?
+        <span style={{ fontSize: 8.5, letterSpacing: '.11em', color: 'var(--accent)', fontFamily: "'Inter', sans-serif" }}>
+          CASE FOUND — DOES THIS LOOK RIGHT?
         </span>
         {hasAutoFilled && (
           <span style={{
-            fontSize: 8, letterSpacing: '.08em',
-            fontFamily: "'Inter', sans-serif",
-            color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4,
+            fontSize: 8, letterSpacing: '.07em', fontFamily: "'Inter', sans-serif",
+            color: 'var(--muted)',
           }}>
-            some fields were filled in automatically
+            some fields auto-filled
           </span>
         )}
       </div>
 
-      <div style={{ padding: '14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Fields */}
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {buildRows(!!parsed.isScotus).map((row, i) => (
-          <div key={i} style={{
-            display: 'flex',
-            // Stack rows with 3+ items vertically on very narrow widths
-            gap: 10,
-            flexWrap: row.length > 2 ? 'wrap' : 'nowrap',
-          }}>
+          <div key={i} style={{ display: 'flex', gap: 8, flexWrap: row.length > 2 ? 'wrap' : 'nowrap' }}>
             {row.map(k => (
               <Field
                 key={k as string} k={k} parsed={parsed} onEdit={onEdit}
@@ -146,21 +132,18 @@ export default function ConfirmBubble({ parsed, onConfirm, onEdit, working }: Pr
           </div>
         ))}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 2 }}>
           <button
             onClick={onConfirm}
             disabled={working}
             style={{
               fontFamily: "'Inter', sans-serif",
-              fontSize: 11, letterSpacing: '.08em', fontWeight: 500,
+              fontSize: 10, letterSpacing: '.08em', fontWeight: 500,
               background: working ? 'var(--surface2)' : 'var(--accent)',
               color: working ? 'var(--faint)' : '#111009',
-              border: 'none', borderRadius: 7, padding: '11px 22px',
+              border: 'none', borderRadius: 6, padding: '8px 18px',
               cursor: working ? 'not-allowed' : 'pointer',
-              transition: 'background .15s',
-              // Full-width on very small screens
-              width: '100%',
-              maxWidth: 200,
+              transition: 'background .15s', width: '100%', maxWidth: 180,
             }}
           >
             {working ? 'GENERATING…' : 'LOOKS GOOD →'}

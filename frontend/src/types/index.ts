@@ -44,4 +44,5 @@ export interface ChatMessage {
   steps?:     TickerStep[]
   parsed?:    ParseResponse
   citation?:  CitationResult
+  prompt?:    string   // ← optional, only set on citation messages
 }

@@ -157,6 +157,25 @@ export default function App() {
     } catch { /* silently ignore */ }
   }
 
+  // ── Feedback persistence ───────────────────────────────────────────────────
+
+  const saveFeedback = async (
+    rating: 'approved' | 'rejected',
+    citation: CitationResult,
+    prompt: string,
+    feedbackText?: string,
+  ) => {
+    try {
+      await supabase.from('cached_citations').insert({
+        rating,
+        citation,
+        prompt: prompt.slice(0, 2000),
+        feedback_text: feedbackText?.trim() || null,
+        user_id: sessionRef.current?.user.id ?? null,
+      })
+    } catch { /* silently ignore */ }
+  }
+
   const handleSelectChat = async (convId: string) => {
     if (convId === currentConvIdRef.current) return
     currentConvIdRef.current = convId
@@ -182,6 +201,7 @@ export default function App() {
           type:     m.type as ChatMessage['type'],
           text:     m.text ?? undefined,
           citation: m.metadata?.citation ?? undefined,
+          prompt:   m.metadata?.prompt ?? undefined,
         })))
       }
     } catch { /* silently ignore */ }
@@ -311,10 +331,12 @@ export default function App() {
           if (evt.type === 'citation') {
             const citData = evt.data as CitationResult
             setMessages(prev => prev.map(m =>
-              m.id === asstId ? { ...m, type: 'citation' as const, citation: citData } : m
+              m.id === asstId
+                ? { ...m, type: 'citation' as const, citation: citData, prompt: userText }
+                : m
             ))
             if (convId) {
-              await saveMessage(convId, 'assistant', 'citation', undefined, { citation: citData })
+              await saveMessage(convId, 'assistant', 'citation', undefined, { citation: citData, prompt: userText })
               await touchConversation(convId)
             }
             setBusy(false)
@@ -358,6 +380,11 @@ export default function App() {
 
     const merged   = { ...pendingParsed, ...pendingEdits }
     const tickerId = uid()
+
+    // Grab the last user prompt for feedback attribution
+    const lastUserPrompt = messagesRef.current
+      .filter(m => m.role === 'user' && m.type === 'text')
+      .slice(-1)[0]?.text ?? ''
 
     setMessages(prev => prev.map(m =>
       m.type === 'confirm'
@@ -412,11 +439,13 @@ export default function App() {
           if (evt.type === 'citation') {
             const citData = evt.data as CitationResult
             setMessages(prev => prev.map(m =>
-              m.id === tickerId ? { ...m, type: 'citation' as const, citation: citData } : m
+              m.id === tickerId
+                ? { ...m, type: 'citation' as const, citation: citData, prompt: lastUserPrompt }
+                : m
             ))
             const convId = currentConvIdRef.current
             if (convId) {
-              await saveMessage(convId, 'assistant', 'citation', undefined, { citation: citData })
+              await saveMessage(convId, 'assistant', 'citation', undefined, { citation: citData, prompt: lastUserPrompt })
               await touchConversation(convId)
             }
             break
@@ -472,7 +501,6 @@ export default function App() {
   const noMessages = messages.length === 0
   const canSend    = input.trim().length > 0 && !busy
 
-  // On mobile the input area gets less horizontal padding
   const chatPadX = isMobile ? '12px' : '24px'
 
   const chatInner: React.CSSProperties = {
@@ -497,7 +525,6 @@ export default function App() {
     shell: {
       display: 'flex', flexDirection: 'column' as const,
       flex: 1, minWidth: 0, height: '100vh',
-      // On mobile when sidebar is open, prevent background scroll
       overflow: 'hidden',
     },
     header: {
@@ -521,7 +548,6 @@ export default function App() {
       animation: 'msgIn .2s ease both',
     }),
     bubble: (role: string): React.CSSProperties => ({
-      // On mobile constrain bubbles a bit more
       maxWidth: isMobile ? '92%' : '88%',
       padding: isMobile ? '10px 13px' : '12px 16px',
       borderRadius: 12,
@@ -536,8 +562,6 @@ export default function App() {
       }),
     }),
   }
-
-  // ── Hamburger icon (mobile only) ───────────────────────────────────────────
 
   const HamburgerIcon = () => (
     <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
@@ -556,7 +580,6 @@ export default function App() {
         @keyframes glowPulse { 0%,100% { opacity:.6; } 50% { opacity:1; } }
       `}</style>
 
-      {/* Sidebar — on desktop renders inline; on mobile renders as overlay drawer */}
       <Sidebar
         onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
@@ -569,7 +592,6 @@ export default function App() {
         onMobileClose={() => setSidebarOpen(false)}
       />
 
-      {/* Mobile sidebar backdrop */}
       {isMobile && sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -586,7 +608,6 @@ export default function App() {
         {/* ── Header ── */}
         <div style={s.header}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Hamburger on mobile */}
             {isMobile && (
               <button
                 onClick={() => setSidebarOpen(true)}
@@ -648,7 +669,6 @@ export default function App() {
                     : '0 0 0 0px transparent',
                   transition: 'box-shadow .35s ease',
                 }}>
-                  {/* Animated border — skip on mobile for perf */}
                   {!isMobile && (
                     <div style={{
                       position: 'absolute', inset: -1.5, borderRadius: 22,
@@ -711,7 +731,15 @@ export default function App() {
                       working={confirmWorking}
                     />
                   ) : msg.type === 'citation' ? (
-                    <CitationCards result={msg.citation!} onEdit={() => {}} sourceUrl={null} />
+                    <CitationCards
+                      result={msg.citation!}
+                      onEdit={() => {}}
+                      sourceUrl={null}
+                      prompt={msg.prompt}
+                      onFeedback={async (rating, feedbackText) => {
+                        await saveFeedback(rating, msg.citation!, msg.prompt ?? '', feedbackText)
+                      }}
+                    />
                   ) : (
                     <div style={s.bubble(msg.role)}>
                       {msg.fileName && <div style={{ fontSize: 10, color: 'var(--accent)', marginBottom: 6 }}>{msg.fileName}</div>}
@@ -731,7 +759,6 @@ export default function App() {
           <div style={{
             padding: isMobile ? '10px 12px 16px' : '12px 24px 24px',
             background: 'var(--bg)',
-            // Safe area for phones with home indicator
             paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom))' : '24px',
           }}>
             <div style={chatInner}>
